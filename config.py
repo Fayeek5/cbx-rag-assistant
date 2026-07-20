@@ -25,6 +25,9 @@ class Settings(BaseSettings):
     # Retrieval
     top_k: int = 5
 
+    # Conversation memory — how many prior turns to remember per session
+    history_turns: int = 6
+
     # Generation
     llm_model: str = "qwen2.5:7b"
     lb_url: str = "http://127.0.0.1:8080"

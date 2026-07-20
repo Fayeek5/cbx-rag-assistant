@@ -13,14 +13,14 @@ from config import settings
 _TIMEOUT = httpx.Timeout(120.0, connect=5.0)
 
 
-def chat(system: str, user: str, model: str | None = None) -> str:
-    """Send a system+user prompt, return the assistant's text."""
+def chat_messages(messages: list[dict], model: str | None = None) -> str:
+    """Send a full messages list (system/user/assistant turns), return the text.
+
+    Tries the load balancer first, then each backend directly as failover.
+    """
     payload = {
         "model": model or settings.llm_model,
-        "messages": [
-            {"role": "system", "content": system},
-            {"role": "user", "content": user},
-        ],
+        "messages": messages,
         "stream": False,
         "options": {"temperature": 0.1},  # low temp = faithful, less invention
     }
@@ -36,3 +36,11 @@ def chat(system: str, user: str, model: str | None = None) -> str:
             last_err = e
             continue
     raise RuntimeError(f"All LLM targets failed. Last error: {last_err}")
+
+
+def chat(system: str, user: str, model: str | None = None) -> str:
+    """Convenience single-turn wrapper around chat_messages()."""
+    return chat_messages(
+        [{"role": "system", "content": system}, {"role": "user", "content": user}],
+        model=model,
+    )

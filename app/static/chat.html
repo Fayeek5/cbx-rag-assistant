@@ -26,6 +26,12 @@
     margin-left: auto; font-size: 11px; color: #90CAF9;
     background: rgba(255,255,255,.1); padding: 3px 10px; border-radius: 20px;
   }
+  #newchat {
+    font-size: 12px; color: #fff; background: rgba(255,255,255,.15);
+    border: 1px solid rgba(255,255,255,.25); border-radius: 8px;
+    padding: 5px 12px; cursor: pointer;
+  }
+  #newchat:hover { background: rgba(255,255,255,.28); }
   #chat {
     flex: 1; overflow-y: auto; padding: 24px;
     display: flex; flex-direction: column; gap: 16px;
@@ -89,6 +95,7 @@
 <header>
   <h1>🔎 CBX Documentation Assistant</h1>
   <span class="badge" id="status">connecting…</span>
+  <button id="newchat" title="Start a fresh conversation">New chat</button>
 </header>
 
 <div id="chat">
@@ -111,8 +118,29 @@
 const chat = document.getElementById('chat');
 const q = document.getElementById('q');
 const send = document.getElementById('send');
-const empty = document.getElementById('empty');
+let empty = document.getElementById('empty');
 const statusEl = document.getElementById('status');
+const newchat = document.getElementById('newchat');
+
+// one conversation id per browser session; follow-ups thread against it
+let sessionId = (crypto.randomUUID && crypto.randomUUID()) ||
+                ('s-' + Date.now() + '-' + Math.random().toString(36).slice(2));
+
+const EMPTY_HTML = `Ask a question about the CBX / TradeBeyond platform.<br>
+    Answers come only from the indexed documentation, with sources.<br><br>
+    Try: <code>What causes a 500 error when importing colors?</code>`;
+
+newchat.addEventListener('click', async () => {
+  try { await fetch('/reset', { method:'POST', headers:{'content-type':'application/json'},
+        body: JSON.stringify({ session_id: sessionId }) }); } catch (e) {}
+  sessionId = (crypto.randomUUID && crypto.randomUUID()) ||
+              ('s-' + Date.now() + '-' + Math.random().toString(36).slice(2));
+  chat.innerHTML = '';
+  const e = document.createElement('div');
+  e.className = 'empty'; e.id = 'empty'; e.innerHTML = EMPTY_HTML;
+  chat.appendChild(e); empty = e;
+  q.focus();
+});
 
 // show index status
 fetch('/health').then(r => r.json()).then(d => {
@@ -162,7 +190,7 @@ async function ask() {
     const res = await fetch('/ask', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ question: text })
+      body: JSON.stringify({ question: text, session_id: sessionId })
     });
     const data = await res.json();
 

@@ -2,6 +2,35 @@
 
 All notable changes to cbx-rag are recorded here. Newest first.
 
+## [0.4.0] — 2026-07-20 — Conversational memory (with strict grounding)
+
+### Added
+- **Multi-turn conversation memory** so follow-ups work ("why is that needed?",
+  "how do I fix it?"):
+  - `app/memory.py` — per-session, in-process history (last `HISTORY_TURNS`, default 6).
+  - `app/rag.py` — two-step turn: **condense** the follow-up into a standalone
+    search query (resolving pronouns to the actual subject), then **answer**
+    grounded, using the conversation only to understand intent.
+  - `app/llm.py` — `chat_messages()` for full multi-turn message lists.
+  - `app/api.py` — `/ask` accepts `session_id`; new `POST /reset` clears a session.
+  - `chat.html` — generates a `session_id`, threads follow-ups, adds a **New chat** button.
+- `config.py` — `HISTORY_TURNS` setting.
+- `docs/06-conversation-memory.md` — how memory + grounding coexist.
+
+### Changed
+- Answer post-processing (`app/rag.py`): strip the model's own "Sources:" line
+  (the API returns accurate sources from metadata) and, on a refusal, return no
+  sources/passages. Fixes the "Sources: <5>" artifact and sources-on-refusal.
+- Hardened `CONDENSE_SYSTEM` with an explicit pronoun→subject rule + example,
+  after a live test showed "that one" drifting to an unrelated chunk.
+
+### Verified (live + in the browser UI)
+- Follow-ups resolve correctly across 3 turns; "it"/"that one" map to the right
+  subject.
+- Strict grounding still holds mid-conversation: "Does it integrate with
+  Salesforce?" → "I don't have that in the documentation."
+- Chat UI end-to-end: bubbles, filename source chips, expandable passages, New chat.
+
 ## [0.3.0] — 2026-07-20 — Chat UI
 
 ### Added

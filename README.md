@@ -99,4 +99,5 @@ python scripts/ingest_docs.py ../cbx-playwright/CBX_API_HANDOUT.md
 - [`docs/03-how-rag-works.md`](docs/03-how-rag-works.md) — RAG explained
 - [`docs/04-load-balancer.md`](docs/04-load-balancer.md) — how the LB works & how to scale
 - [`docs/05-cbx-data.md`](docs/05-cbx-data.md) — moving from sample docs to CBX data
+- [`docs/06-conversation-memory.md`](docs/06-conversation-memory.md) — multi-turn memory + strict grounding
 - [`docs/CHANGELOG.md`](docs/CHANGELOG.md) — what changed, when

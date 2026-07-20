@@ -17,7 +17,7 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 from config import settings
-from app import vectorstore
+from app import vectorstore, memory
 from app.rag import answer
 
 app = FastAPI(title="CBX RAG API", version="0.1.0")
@@ -33,12 +33,17 @@ def chat_ui():
 
 class AskRequest(BaseModel):
     question: str
+    session_id: Optional[str] = None   # groups turns into one conversation
     top_k: Optional[int] = None
 
 
 class SearchRequest(BaseModel):
     query: str
     top_k: Optional[int] = None
+
+
+class ResetRequest(BaseModel):
+    session_id: str
 
 
 @app.get("/health")
@@ -53,7 +58,16 @@ def health():
 
 @app.post("/ask")
 def ask(req: AskRequest):
-    return answer(req.question, top_k=req.top_k)
+    result = answer(req.question, session_id=req.session_id or "", top_k=req.top_k)
+    result["session_id"] = req.session_id
+    return result
+
+
+@app.post("/reset")
+def reset(req: ResetRequest):
+    """Clear a conversation's memory (New chat)."""
+    memory.reset(req.session_id)
+    return {"status": "ok", "session_id": req.session_id}
 
 
 @app.post("/search")
