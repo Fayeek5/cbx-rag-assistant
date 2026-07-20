@@ -73,6 +73,13 @@ def query(text: str, top_k: int | None = None) -> list[dict]:
     return out
 
 
+def all_chunks() -> tuple[list[str], list[str], list[dict]]:
+    """Return (ids, documents, metadatas) for every stored chunk — used to build
+    the BM25 keyword index."""
+    res = _collection().get(include=["documents", "metadatas"])
+    return res.get("ids", []), res.get("documents", []), res.get("metadatas", [])
+
+
 def count() -> int:
     return _collection().count()
 

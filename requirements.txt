@@ -9,6 +9,9 @@ sentence-transformers>=2.6,<3.1
 # Vector store — Chroma persists to disk, no separate server needed
 chromadb>=0.4.24,<0.6
 
+# Keyword (BM25) arm of hybrid retrieval — pure-python, tiny
+rank-bm25>=0.2.2,<0.3
+
 # HTTP client — used to call Ollama and inside the load balancer
 httpx>=0.27,<0.28
 

@@ -15,7 +15,7 @@ from __future__ import annotations
 
 import re
 
-from app import vectorstore, memory
+from app import vectorstore, memory, retriever
 from app.llm import chat, chat_messages
 
 REFUSAL = "I don't have that in the documentation."
@@ -171,9 +171,9 @@ def answer(question: str, session_id: str = "", top_k: int | None = None) -> dic
     # 1. resolve follow-ups into a standalone query for retrieval
     search_query = _condense(history, question)
 
-    # 2. retrieve
-    passages = vectorstore.query(search_query, top_k=top_k)
-    if not passages:
+    # 2. retrieve (hybrid + rerank) and apply the hard relevance gate
+    passages = retriever.retrieve(search_query, top_k=top_k)
+    if not retriever.passes_threshold(passages):
         _record(session_id, question, REFUSAL)
         return {"answer": REFUSAL, "sources": [], "passages": [],
                 "search_query": search_query, "intent": "doc"}

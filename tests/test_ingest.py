@@ -29,6 +29,25 @@ def test_empty_text_yields_no_chunks():
     assert chunk_text("   \n\n  ", source="s") == []
 
 
+def test_section_heading_prefixed_on_chunks():
+    text = "## Colors\n\nColors have HEX and RGB values.\n\n## Vendors\n\nVendors are suppliers."
+    chunks = chunk_text(text, source="kb.md")
+    # each chunk should carry its section heading for context
+    assert any(c.text.startswith("## Colors") for c in chunks)
+    assert any(c.text.startswith("## Vendors") for c in chunks)
+
+
+def test_table_kept_together(monkeypatch):
+    from config import settings
+    monkeypatch.setattr(settings, "chunk_size", 2000)
+    table = "| a | b |\n|---|---|\n| 1 | 2 |\n| 3 | 4 |"
+    text = f"## API\n\nIntro line.\n\n{table}"
+    chunks = chunk_text(text, source="api.md")
+    # the whole table should live in one chunk, not split across rows
+    joined = [c.text for c in chunks if "| 1 | 2 |" in c.text]
+    assert joined and "| 3 | 4 |" in joined[0]
+
+
 def test_load_and_chunk_markdown(tmp_path):
     p = tmp_path / "doc.md"
     p.write_text("# Title\n\nFirst para.\n\nSecond para.", encoding="utf-8")

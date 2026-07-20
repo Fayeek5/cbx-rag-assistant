@@ -7,6 +7,7 @@ chunks share context at their edges (helps retrieval recall).
 from __future__ import annotations
 
 import os
+import re
 from dataclasses import dataclass
 
 from config import settings
@@ -56,36 +57,98 @@ def load_file(path: str) -> str:
 
 
 # ── Chunking ───────────────────────────────────────────────────────────
+_HEADING_RE = re.compile(r"^#{1,6}\s+\S")
+
+
+def _is_table_line(line: str) -> bool:
+    return line.lstrip().startswith("|")
+
+
+def _split_blocks(text: str) -> list[str]:
+    """Split into blocks on blank lines, but keep consecutive markdown table rows
+    together as a single atomic block (so a field table is never cut in half)."""
+    blocks: list[str] = []
+    buf: list[str] = []
+    in_table = False
+    for line in text.split("\n"):
+        if _is_table_line(line):
+            if not in_table and buf:
+                blocks.append("\n".join(buf)); buf = []
+            in_table = True
+            buf.append(line)
+            continue
+        if in_table:
+            # table ended
+            blocks.append("\n".join(buf)); buf = []; in_table = False
+        if line.strip() == "":
+            if buf:
+                blocks.append("\n".join(buf)); buf = []
+        else:
+            buf.append(line)
+    if buf:
+        blocks.append("\n".join(buf))
+    return [b for b in blocks if b.strip()]
+
+
+def _split_sections(text: str) -> list[tuple[str, str]]:
+    """Split markdown into (heading, body) sections. Returns [("", body)] when the
+    text has no headings (e.g. extracted PDF text)."""
+    lines = text.split("\n")
+    if not any(_HEADING_RE.match(ln) for ln in lines):
+        return [("", text)]
+    sections: list[tuple[str, str]] = []
+    heading = ""
+    body: list[str] = []
+    for ln in lines:
+        if _HEADING_RE.match(ln):
+            if heading or body:
+                sections.append((heading, "\n".join(body)))
+            heading = ln.strip()
+            body = []
+        else:
+            body.append(ln)
+    if heading or body:
+        sections.append((heading, "\n".join(body)))
+    return sections
+
+
 def chunk_text(text: str, source: str) -> list[Chunk]:
-    """Greedy paragraph packing with character overlap."""
+    """Section-aware chunking: split on markdown headings, keep tables whole, and
+    pack blocks up to the size limit. Each chunk from a section is prefixed with
+    that section's heading so its context survives retrieval. Non-markdown text
+    (PDFs) falls back to block packing with overlap."""
     size = settings.chunk_size
     overlap = settings.chunk_overlap
-
-    paragraphs = [p.strip() for p in text.split("\n\n") if p.strip()]
     chunks: list[Chunk] = []
-    buf = ""
     idx = 0
 
-    def flush():
-        nonlocal buf, idx
-        if buf.strip():
-            chunks.append(Chunk(text=buf.strip(), source=source, chunk_index=idx))
-            idx += 1
+    for heading, body in _split_sections(text):
+        prefix = (heading + "\n\n") if heading else ""
+        blocks = _split_blocks(body)
+        if not blocks and heading:
+            chunks.append(Chunk(text=heading, source=source, chunk_index=idx)); idx += 1
+            continue
 
-    for para in paragraphs:
-        if len(buf) + len(para) + 2 <= size:
-            buf = f"{buf}\n\n{para}" if buf else para
-        else:
-            flush()
-            # carry the tail of the previous chunk as overlap
-            tail = buf[-overlap:] if overlap and buf else ""
-            buf = f"{tail}\n\n{para}" if tail else para
-            # a single oversized paragraph: hard-split it
-            while len(buf) > size:
-                chunks.append(Chunk(text=buf[:size].strip(), source=source, chunk_index=idx))
-                idx += 1
-                buf = buf[size - overlap:]
-    flush()
+        buf = ""
+        for block in blocks:
+            candidate = f"{buf}\n\n{block}" if buf else block
+            if len(prefix) + len(candidate) <= size:
+                buf = candidate
+            else:
+                if buf:
+                    chunks.append(Chunk(text=(prefix + buf).strip(), source=source, chunk_index=idx)); idx += 1
+                    tail = buf[-overlap:] if overlap else ""
+                    buf = f"{tail}\n\n{block}" if tail else block
+                else:
+                    buf = block
+                # hard-split a single oversized block (e.g. a huge table)
+                while len(prefix) + len(buf) > size:
+                    cut = size - len(prefix)
+                    chunks.append(Chunk(text=(prefix + buf[:cut]).strip(), source=source, chunk_index=idx)); idx += 1
+                    buf = buf[cut - overlap:] if cut - overlap > 0 else buf[cut:]
+        if buf.strip():
+            chunks.append(Chunk(text=(prefix + buf).strip(), source=source, chunk_index=idx)); idx += 1
+
     return chunks
 
 
