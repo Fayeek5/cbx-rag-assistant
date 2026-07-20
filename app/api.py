@@ -9,6 +9,8 @@ Run:  uvicorn app.api:app --host 127.0.0.1 --port 8000
 """
 from __future__ import annotations
 
+from typing import Optional
+
 from fastapi import FastAPI
 from pydantic import BaseModel
 
@@ -21,12 +23,12 @@ app = FastAPI(title="CBX RAG API", version="0.1.0")
 
 class AskRequest(BaseModel):
     question: str
-    top_k: int | None = None
+    top_k: Optional[int] = None
 
 
 class SearchRequest(BaseModel):
     query: str
-    top_k: int | None = None
+    top_k: Optional[int] = None
 
 
 @app.get("/health")

@@ -2,6 +2,31 @@
 
 All notable changes to cbx-rag are recorded here. Newest first.
 
+## [0.1.1] — 2026-07-20 — Python 3.9 fix + full end-to-end verification
+
+### Fixed
+- **Python 3.9 compatibility**: Pydantic models in `app/api.py` used `int | None`
+  union syntax, which Pydantic evaluates at runtime and 3.9 cannot parse. Switched
+  to `Optional[int]`. (Function-signature unions elsewhere are fine — deferred by
+  `from __future__ import annotations` and never runtime-evaluated.)
+
+### Changed
+- **Refined the grounded system prompt** (`app/rag.py`) so the model cites sources
+  ONLY when it actually answers; an out-of-scope question now returns exactly
+  "I don't have that in the documentation." with no trailing sources line.
+
+### Verified (end to end, live)
+- Load balancer up; backend health check green (`/lb/health`).
+- RAG API healthy; 3 sample chunks indexed.
+- Full `/ask` path works on **llama3.2** and on **qwen2.5:7b**:
+  - "Why do I get a 401?" → correct, grounded, cited.
+  - "Onboarding order?" → correct 4-step order, grounded, cited.
+  - "500 creating a widget?" → correct cause (size as string), cited.
+- **Anti-hallucination guardrail confirmed**: out-of-scope question →
+  "I don't have that in the documentation." (no sources).
+- `qwen2.5:7b` pulled and set as default LLM.
+
+
 ## [0.1.0] — 2026-07-20 — Phase 1 scaffold
 
 Initial local, single-server RAG stack. Free/local throughout (no paid APIs).
