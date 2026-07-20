@@ -2,6 +2,28 @@
 
 All notable changes to cbx-rag are recorded here. Newest first.
 
+## [0.2.1] — 2026-07-20 — Remove client-specific (WBA) data from the index
+
+### Changed
+- **Excluded all WBA (client-specific) docs** from the knowledge base. The index
+  now holds only generic, product-level CBX documentation. Rebuilt the index:
+  **236 chunks** (was 270 — 34 WBA chunks removed).
+- `docs/05-cbx-data.md`: WBA moved to an explicit "Excluded — client-specific
+  (do NOT ingest)" section; ingestion commands now list each generic file
+  explicitly instead of pointing at a whole folder, so no client doc can land in
+  the general index by accident.
+
+### Rationale
+- Client-confidential, single-implementation material (approval templates, D&B
+  routing, environment configs, customer names) does not belong in a general CBX
+  assistant and could leak client detail into unrelated answers. A per-client
+  assistant, if ever needed, should be a separate isolated index.
+
+### Verified
+- Generic questions still answer correctly (codelist shape, OpenSearch "No records
+  found").
+- WBA content no longer appears in retrieval results.
+
 ## [0.2.0] — 2026-07-20 — Real CBX corpus ingested & validated
 
 ### Added
