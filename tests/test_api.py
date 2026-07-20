@@ -57,6 +57,30 @@ def test_reset_endpoint(client):
     assert r.json()["status"] == "ok"
 
 
+def test_ask_stream_emits_tokens_and_meta(client, mock_llm, monkeypatch):
+    # stream client uses chat_messages_stream; make it yield deltas
+    def fake_stream(messages, model=None):
+        yield "Codelist fields are "
+        yield "{code, name, version}."
+    monkeypatch.setattr("app.rag.chat_messages_stream", fake_stream)
+    monkeypatch.setattr("app.rag._suggest_followups", lambda q, a: ["What is ELC?"])
+
+    with client.stream("POST", "/ask/stream",
+                       json={"question": "codelist shape?", "session_id": "s"}) as r:
+        assert r.status_code == 200
+        body = "".join(r.iter_text())
+    assert "token" in body and "meta" in body
+    assert "Codelist fields are" in body
+
+
+def test_feedback_endpoint(client, tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)  # feedback.jsonl written under cwd/data
+    r = client.post("/feedback", json={
+        "question": "q?", "answer": "a.", "rating": "up", "session_id": "s"})
+    assert r.status_code == 200
+    assert (tmp_path / "data" / "feedback.jsonl").exists()
+
+
 def test_ask_requires_question(client):
     r = client.post("/ask", json={})
     assert r.status_code == 422  # pydantic validation error

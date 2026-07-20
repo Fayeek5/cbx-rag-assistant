@@ -39,59 +39,65 @@
   }
   .msg { display: flex; flex-direction: column; gap: 4px; max-width: 85%; }
   .msg.user { align-self: flex-end; align-items: flex-end; }
-  .msg.bot { align-self: flex-start; }
+  .msg.bot { align-self: flex-start; width: 85%; }
   .bubble {
     padding: 12px 16px; border-radius: 12px; font-size: 14px; line-height: 1.55;
-    white-space: pre-wrap; word-wrap: break-word;
+    word-wrap: break-word; overflow-wrap: anywhere;
   }
-  .user .bubble { background: var(--user); border: 1px solid #2a3f5f; border-bottom-right-radius: 4px; }
+  .user .bubble { background: var(--user); border: 1px solid #2a3f5f; border-bottom-right-radius: 4px; white-space: pre-wrap; }
   .bot .bubble { background: var(--bot); border: 1px solid var(--border); border-bottom-left-radius: 4px; }
   .role { font-size: 11px; color: var(--muted); padding: 0 4px; }
-  .sources {
-    margin-top: 6px; font-size: 12px; color: var(--muted);
-    display: flex; flex-wrap: wrap; gap: 6px; align-items: center;
+
+  /* markdown */
+  .bubble p { margin: 0 0 8px; } .bubble p:last-child { margin-bottom: 0; }
+  .bubble ul, .bubble ol { margin: 4px 0 8px 20px; }
+  .bubble li { margin: 2px 0; }
+  .bubble code { background: #0d1117; border: 1px solid var(--border); border-radius: 4px; padding: 1px 5px; font-size: 12.5px; font-family: ui-monospace, Menlo, monospace; }
+  .bubble pre { background: #0d1117; border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; overflow-x: auto; margin: 8px 0; }
+  .bubble pre code { border: none; padding: 0; background: none; }
+  .bubble h1, .bubble h2, .bubble h3 { font-size: 14px; margin: 8px 0 4px; }
+  .bubble strong { font-weight: 700; }
+  .bubble a { color: var(--accent-fg); }
+
+  /* inline citations */
+  .cite {
+    display: inline-block; font-size: 10px; font-weight: 700; color: var(--accent-fg);
+    background: #10233c; border: 1px solid #24507f; border-radius: 4px;
+    padding: 0 4px; margin: 0 1px; cursor: pointer; vertical-align: super; line-height: 1.4;
   }
-  .src-chip {
-    background: #0d1117; border: 1px solid var(--border); border-radius: 6px;
-    padding: 2px 8px; color: var(--accent-fg); font-size: 11px;
-  }
-  details {
-    margin-top: 8px; font-size: 12px; background: #0d1117;
-    border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px;
-  }
+  .cite:hover { background: #1a3557; }
+
+  .sources { margin-top: 8px; font-size: 12px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .src-chip { background: #0d1117; border: 1px solid var(--border); border-radius: 6px; padding: 2px 8px; color: var(--accent-fg); font-size: 11px; }
+  details { margin-top: 8px; font-size: 12px; background: #0d1117; border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; }
   details summary { cursor: pointer; color: var(--muted); user-select: none; }
   details summary:hover { color: var(--text); }
-  .passage {
-    margin-top: 8px; padding: 8px; border-left: 2px solid var(--accent);
-    background: #10151c; border-radius: 4px; color: #c9d1d9;
-  }
+  .passage { margin-top: 8px; padding: 8px; border-left: 2px solid var(--border); background: #10151c; border-radius: 4px; color: #c9d1d9; white-space: pre-wrap; }
+  .passage.hl { border-left-color: var(--accent-fg); background: #10233c; }
   .passage .meta { color: var(--muted); font-size: 11px; margin-bottom: 4px; }
+
+  /* feedback + follow-ups */
+  .actions { margin-top: 8px; display: flex; gap: 6px; align-items: center; }
+  .fb { background: none; border: 1px solid var(--border); border-radius: 6px; color: var(--muted); cursor: pointer; font-size: 13px; padding: 2px 8px; }
+  .fb:hover { color: var(--text); border-color: var(--accent-fg); }
+  .fb.on { color: var(--ok); border-color: var(--ok); }
+  .fb.down.on { color: #ff7b72; border-color: #ff7b72; }
+  .followups { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 6px; }
+  .fu { background: #10233c; border: 1px solid #24507f; color: var(--accent-fg); border-radius: 16px; padding: 4px 12px; font-size: 12px; cursor: pointer; }
+  .fu:hover { background: #1a3557; }
+
   .typing { color: var(--muted); font-style: italic; font-size: 13px; display: inline-flex; align-items: center; gap: 8px; }
   .dots { display: inline-flex; gap: 3px; }
-  .dots span {
-    width: 5px; height: 5px; border-radius: 50%; background: var(--accent-fg);
-    animation: blink 1.4s infinite both;
-  }
+  .dots span { width: 5px; height: 5px; border-radius: 50%; background: var(--accent-fg); animation: blink 1.4s infinite both; }
   .dots span:nth-child(2) { animation-delay: .2s; }
   .dots span:nth-child(3) { animation-delay: .4s; }
   @keyframes blink { 0%, 80%, 100% { opacity: .2; } 40% { opacity: 1; } }
-  footer {
-    border-top: 1px solid var(--border); padding: 16px;
-    background: var(--panel);
-  }
-  .input-row {
-    max-width: 900px; margin: 0 auto; display: flex; gap: 10px;
-  }
-  #q {
-    flex: 1; background: #0d1117; border: 1px solid var(--border);
-    border-radius: 10px; padding: 12px 14px; color: var(--text); font-size: 14px;
-    resize: none; font-family: inherit; max-height: 120px;
-  }
+
+  footer { border-top: 1px solid var(--border); padding: 16px; background: var(--panel); }
+  .input-row { max-width: 900px; margin: 0 auto; display: flex; gap: 10px; }
+  #q { flex: 1; background: #0d1117; border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; color: var(--text); font-size: 14px; resize: none; font-family: inherit; max-height: 120px; }
   #q:focus { outline: none; border-color: var(--accent-fg); }
-  #send {
-    background: var(--accent); color: #fff; border: none; border-radius: 10px;
-    padding: 0 22px; font-size: 14px; font-weight: 600; cursor: pointer;
-  }
+  #send { background: var(--accent); color: #fff; border: none; border-radius: 10px; padding: 0 22px; font-size: 14px; font-weight: 600; cursor: pointer; }
   #send:hover { background: #1a75d1; }
   #send:disabled { opacity: .5; cursor: not-allowed; }
   .hint { max-width: 900px; margin: 8px auto 0; font-size: 11px; color: var(--muted); }
@@ -119,7 +125,7 @@
     <textarea id="q" rows="1" placeholder="Ask about CBX… (Enter to send, Shift+Enter for newline)"></textarea>
     <button id="send">Send</button>
   </div>
-  <div class="hint">Grounded in indexed docs only · answers cite their source files · says “I don’t have that” when unknown.</div>
+  <div class="hint">Grounded in indexed docs only · answers cite their source files · says "I don't have that" when unknown.</div>
 </footer>
 
 <script>
@@ -130,19 +136,22 @@ let empty = document.getElementById('empty');
 const statusEl = document.getElementById('status');
 const newchat = document.getElementById('newchat');
 
-// one conversation id per browser session; follow-ups thread against it
-let sessionId = (crypto.randomUUID && crypto.randomUUID()) ||
-                ('s-' + Date.now() + '-' + Math.random().toString(36).slice(2));
+const newId = () => (crypto.randomUUID && crypto.randomUUID()) ||
+                    ('s-' + Date.now() + '-' + Math.random().toString(36).slice(2));
+let sessionId = newId();
 
 const EMPTY_HTML = `Ask a question about the CBX / TradeBeyond platform.<br>
     Answers come only from the indexed documentation, with sources.<br><br>
     Try: <code>What causes a 500 error when importing colors?</code>`;
 
+fetch('/health').then(r => r.json()).then(d => {
+  statusEl.textContent = `${d.indexed_chunks} chunks · ${d.llm_model}`;
+}).catch(() => { statusEl.textContent = 'offline'; });
+
 newchat.addEventListener('click', async () => {
   try { await fetch('/reset', { method:'POST', headers:{'content-type':'application/json'},
         body: JSON.stringify({ session_id: sessionId }) }); } catch (e) {}
-  sessionId = (crypto.randomUUID && crypto.randomUUID()) ||
-              ('s-' + Date.now() + '-' + Math.random().toString(36).slice(2));
+  sessionId = newId();
   chat.innerHTML = '';
   const e = document.createElement('div');
   e.className = 'empty'; e.id = 'empty'; e.innerHTML = EMPTY_HTML;
@@ -150,103 +159,172 @@ newchat.addEventListener('click', async () => {
   q.focus();
 });
 
-// show index status
-fetch('/health').then(r => r.json()).then(d => {
-  statusEl.textContent = `${d.indexed_chunks} chunks · ${d.llm_model}`;
-}).catch(() => { statusEl.textContent = 'offline'; });
-
-// auto-grow textarea
-q.addEventListener('input', () => {
-  q.style.height = 'auto';
-  q.style.height = Math.min(q.scrollHeight, 120) + 'px';
-});
-
-q.addEventListener('keydown', e => {
-  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); ask(); }
-});
+q.addEventListener('input', () => { q.style.height = 'auto'; q.style.height = Math.min(q.scrollHeight, 120) + 'px'; });
+q.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); ask(); } });
 send.addEventListener('click', ask);
-
-function addMsg(role, text) {
-  const msg = document.createElement('div');
-  msg.className = 'msg ' + role;
-  msg.innerHTML = `<div class="role">${role === 'user' ? 'You' : 'Assistant'}</div>
-                   <div class="bubble"></div>`;
-  msg.querySelector('.bubble').textContent = text;
-  chat.appendChild(msg);
-  chat.scrollTop = chat.scrollHeight;
-  return msg;
-}
 
 function escapeHtml(s) {
   return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
+// minimal, safe markdown -> HTML (escape first, then apply a few transforms)
+function renderMarkdown(md) {
+  const fences = [];
+  md = md.replace(/```(\w*)\n?([\s\S]*?)```/g, (m, lang, code) => {
+    fences.push(`<pre><code>${escapeHtml(code.replace(/\n$/, ''))}</code></pre>`);
+    return ` ${fences.length - 1} `;
+  });
+  md = escapeHtml(md);
+  md = md.replace(/`([^`]+)`/g, (m, c) => `<code>${c}</code>`);
+  md = md.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+  md = md.replace(/(^|[^*])\*([^*\n]+)\*/g, '$1<em>$2</em>');
+  md = md.replace(/\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+  // inline citations [1] [2] -> clickable
+  md = md.replace(/\[(\d{1,2})\]/g, (m, n) => `<span class="cite" data-n="${n}">[${n}]</span>`);
+  // lists + paragraphs
+  const lines = md.split('\n');
+  let html = '', inUl = false, inOl = false, para = [];
+  const flushP = () => { if (para.length) { html += '<p>' + para.join('<br>') + '</p>'; para = []; } };
+  const closeLists = () => { if (inUl) { html += '</ul>'; inUl = false; } if (inOl) { html += '</ol>'; inOl = false; } };
+  for (let ln of lines) {
+    if (/^ \d+ $/.test(ln.trim())) { flushP(); closeLists(); html += ln.trim(); continue; }
+    let m;
+    if ((m = ln.match(/^\s*[-*]\s+(.*)/))) { flushP(); if (!inUl) { closeLists(); html += '<ul>'; inUl = true; } html += `<li>${m[1]}</li>`; }
+    else if ((m = ln.match(/^\s*\d+\.\s+(.*)/))) { flushP(); if (!inOl) { closeLists(); html += '<ol>'; inOl = true; } html += `<li>${m[1]}</li>`; }
+    else if ((m = ln.match(/^\s*#{1,6}\s+(.*)/))) { flushP(); closeLists(); html += `<h3>${m[1]}</h3>`; }
+    else if (ln.trim() === '') { flushP(); closeLists(); }
+    else { para.push(ln); }
+  }
+  flushP(); closeLists();
+  // restore code fences
+  html = html.replace(/ (\d+) /g, (m, i) => fences[+i]);
+  return html;
+}
+
+function addMsg(role) {
+  const msg = document.createElement('div');
+  msg.className = 'msg ' + role;
+  msg.innerHTML = `<div class="role">${role === 'user' ? 'You' : 'Assistant'}</div><div class="bubble"></div>`;
+  chat.appendChild(msg);
+  chat.scrollTop = chat.scrollHeight;
+  return msg;
+}
+
+function renderMeta(botMsg, bubble, data, question) {
+  // sources
+  if (data.sources && data.sources.length) {
+    const src = document.createElement('div');
+    src.className = 'sources';
+    src.innerHTML = '<span>Sources:</span>' +
+      data.sources.map(s => `<span class="src-chip">${escapeHtml(s.split('/').pop())}</span>`).join('');
+    botMsg.appendChild(src);
+  }
+  // passages (expandable) + citation wiring
+  let det = null;
+  if (data.passages && data.passages.length) {
+    det = document.createElement('details');
+    det.innerHTML = `<summary>Show ${data.passages.length} retrieved passages</summary>`;
+    data.passages.forEach((p, i) => {
+      const div = document.createElement('div');
+      div.className = 'passage'; div.dataset.p = i + 1;
+      div.innerHTML = `<div class="meta">[${i+1}] ${escapeHtml(p.source.split('/').pop())} · score ${p.score.toFixed(3)}</div>`;
+      const body = document.createElement('div'); body.textContent = p.text; div.appendChild(body);
+      det.appendChild(div);
+    });
+    botMsg.appendChild(det);
+  }
+  bubble.querySelectorAll('.cite').forEach(el => {
+    el.addEventListener('click', () => {
+      if (!det) return; det.open = true;
+      const target = det.querySelector(`.passage[data-p="${el.dataset.n}"]`);
+      if (target) { det.querySelectorAll('.passage').forEach(p => p.classList.remove('hl'));
+        target.classList.add('hl'); target.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); }
+    });
+  });
+  // feedback
+  if (data.intent === 'doc') {
+    const actions = document.createElement('div'); actions.className = 'actions';
+    const up = document.createElement('button'); up.className = 'fb'; up.textContent = '👍';
+    const down = document.createElement('button'); down.className = 'fb down'; down.textContent = '👎';
+    const rate = (r, btn) => async () => {
+      up.classList.remove('on'); down.classList.remove('on'); btn.classList.add('on');
+      try { await fetch('/feedback', { method:'POST', headers:{'content-type':'application/json'},
+        body: JSON.stringify({ session_id: sessionId, question, answer: bubble.textContent, rating: r }) }); } catch(e){}
+    };
+    up.onclick = rate('up', up); down.onclick = rate('down', down);
+    actions.append(up, down); botMsg.appendChild(actions);
+  }
+  // follow-ups
+  if (data.followups && data.followups.length) {
+    const fu = document.createElement('div'); fu.className = 'followups';
+    data.followups.forEach(f => {
+      const b = document.createElement('button'); b.className = 'fu'; b.textContent = f;
+      b.onclick = () => { q.value = f; ask(); };
+      fu.appendChild(b);
+    });
+    botMsg.appendChild(fu);
+  }
+}
+
 async function ask() {
   const text = q.value.trim();
   if (!text) return;
-  if (empty) empty.remove();
+  if (empty) { empty.remove(); empty = null; }
 
-  addMsg('user', text);
+  addMsg('user').querySelector('.bubble').textContent = text;
   q.value = ''; q.style.height = 'auto';
   send.disabled = true;
 
-  const botMsg = addMsg('bot', '');
+  const botMsg = addMsg('bot');
   const bubble = botMsg.querySelector('.bubble');
-
-  // phased, animated indicator that reflects the real pipeline
   const phases = ['Searching the documentation', 'Reading the sources', 'Writing a grounded answer'];
   let phase = 0;
   const dots = '<span class="dots"><span></span><span></span><span></span></span>';
-  const renderPhase = () => { bubble.innerHTML = `<span class="typing">${phases[phase]} ${dots}</span>`; };
-  renderPhase();
-  const phaseTimer = setInterval(() => {
-    phase = Math.min(phase + 1, phases.length - 1);
-    renderPhase();
-    if (phase === phases.length - 1) clearInterval(phaseTimer);
-  }, 1300);
+  bubble.innerHTML = `<span class="typing">${phases[0]} ${dots}</span>`;
+  const phaseTimer = setInterval(() => { phase = Math.min(phase + 1, phases.length - 1);
+    if (!bubble.dataset.streaming) bubble.innerHTML = `<span class="typing">${phases[phase]} ${dots}</span>`;
+    if (phase === phases.length - 1) clearInterval(phaseTimer); }, 1300);
 
+  let acc = '', meta = null;
   try {
-    const res = await fetch('/ask', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
+    const res = await fetch('/ask/stream', {
+      method: 'POST', headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ question: text, session_id: sessionId })
     });
-    const data = await res.json();
+    const reader = res.body.getReader();
+    const dec = new TextDecoder();
+    let buf = '';
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buf += dec.decode(value, { stream: true });
+      const parts = buf.split('\n\n'); buf = parts.pop();
+      for (const part of parts) {
+        const line = part.replace(/^data: /, '').trim();
+        if (!line) continue;
+        let ev; try { ev = JSON.parse(line); } catch { continue; }
+        if (ev.type === 'token') {
+          clearInterval(phaseTimer);
+          bubble.dataset.streaming = '1';
+          acc += ev.text;
+          bubble.innerHTML = renderMarkdown(acc);
+          chat.scrollTop = chat.scrollHeight;
+        } else if (ev.type === 'meta') {
+          meta = ev;
+        } else if (ev.type === 'error') {
+          clearInterval(phaseTimer);
+          bubble.textContent = '⚠️ ' + ev.text;
+        }
+      }
+    }
     clearInterval(phaseTimer);
-
-    bubble.textContent = data.answer || '(no answer)';
-
-    // sources
-    if (data.sources && data.sources.length) {
-      const src = document.createElement('div');
-      src.className = 'sources';
-      src.innerHTML = '<span>Sources:</span>' +
-        data.sources.map(s => `<span class="src-chip">${escapeHtml(s.split('/').pop())}</span>`).join('');
-      botMsg.appendChild(src);
-    }
-
-    // expandable retrieved passages (for verification)
-    if (data.passages && data.passages.length) {
-      const det = document.createElement('details');
-      det.innerHTML = `<summary>Show ${data.passages.length} retrieved passages</summary>`;
-      data.passages.forEach((p, i) => {
-        const div = document.createElement('div');
-        div.className = 'passage';
-        div.innerHTML = `<div class="meta">[${i+1}] ${escapeHtml(p.source.split('/').pop())} · score ${p.score.toFixed(3)}</div>`;
-        const body = document.createElement('div');
-        body.textContent = p.text;
-        div.appendChild(body);
-        det.appendChild(div);
-      });
-      botMsg.appendChild(det);
-    }
+    if (acc) bubble.innerHTML = renderMarkdown(acc);
+    if (meta) renderMeta(botMsg, bubble, meta, text);
   } catch (err) {
     clearInterval(phaseTimer);
     bubble.textContent = '⚠️ Error: ' + err.message + ' (is the server running?)';
   } finally {
-    send.disabled = false;
-    q.focus();
-    chat.scrollTop = chat.scrollHeight;
+    send.disabled = false; q.focus(); chat.scrollTop = chat.scrollHeight;
   }
 }
 </script>

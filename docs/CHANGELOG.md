@@ -2,6 +2,30 @@
 
 All notable changes to cbx-rag are recorded here. Newest first.
 
+## [0.7.0] — 2026-07-20 — Streaming, inline citations, markdown, feedback, follow-ups
+
+### Added
+- **Streaming responses** — tokens appear as the model writes them:
+  - `app/llm.py` `chat_messages_stream()` (Ollama `stream=true`, JSON-lines, same
+    LB→backend failover).
+  - `app/rag.py` `answer_stream()` generator: same intent routing + grounding,
+    yields token deltas then a final `meta` event.
+  - `app/api.py` `POST /ask/stream` (Server-Sent Events).
+- **Inline citations** — the model cites `[1]`, `[2]` next to each claim (no more
+  trailing "Sources:" line); the UI renders them as clickable badges that open and
+  highlight the matching retrieved passage.
+- **Markdown rendering** in the chat bubble — lists, `code`, code fences, bold,
+  headings, links (safe, dependency-free renderer; HTML-escaped first).
+- **Feedback** — 👍/👎 under each doc answer → `POST /feedback` appends to
+  `data/feedback.jsonl` (seeds a future eval set).
+- **Follow-up suggestions** — up to 3 chips after each answer (`_suggest_followups`),
+  click to ask.
+- Tests for `/ask/stream` and `/feedback`; suite now 50 tests, all green.
+
+### Changed
+- Answer prompt updated for inline citations + Markdown; UI fully rewritten to
+  consume the SSE stream and render everything.
+
 ## [0.6.0] — 2026-07-20 — Intent routing (converse normally, gate facts)
 
 ### Added

@@ -16,7 +16,7 @@ from __future__ import annotations
 import re
 
 from app import vectorstore, memory, retriever
-from app.llm import chat, chat_messages
+from app.llm import chat, chat_messages, chat_messages_stream
 
 REFUSAL = "I don't have that in the documentation."
 
@@ -140,10 +140,30 @@ ANSWER_SYSTEM = (
     "passages.\n"
     "4. If the CONTEXT does not contain the answer, reply with EXACTLY this and "
     "nothing else: I don't have that in the documentation.\n\n"
-    "When you can answer: FIRST write the answer in 1-5 sentences, technical and "
-    "concise. THEN on a new line: Sources: <file1>, <file2> (only files you used). "
-    "Never reply with only a 'Sources:' line."
+    "When you can answer: be technical and concise. Use Markdown when it helps "
+    "(short lists, `code`, code fences). Cite sources INLINE as [1], [2] using the "
+    "CONTEXT passage numbers right after the claim they support. Do NOT add a "
+    "trailing 'Sources:' line — the interface shows sources separately."
 )
+
+# ── Follow-up suggestions ────────────────────────────────────────────────
+FOLLOWUP_SYSTEM = (
+    "Given a Q&A about the CBX/TradeBeyond docs, propose up to 3 short, natural "
+    "follow-up questions the user might ask next. Each on its own line, no "
+    "numbering, no preamble. Keep each under 12 words. If none make sense, output "
+    "nothing."
+)
+
+
+def _suggest_followups(question: str, answer_text: str) -> list[str]:
+    if answer_text.strip().lower().startswith(REFUSAL.rstrip(".").lower()):
+        return []
+    try:
+        raw = chat(FOLLOWUP_SYSTEM, f"Q: {question}\nA: {answer_text}\n\nFollow-ups:")
+        lines = [re.sub(r"^\s*[-*\d.]+\s*", "", ln).strip() for ln in raw.splitlines()]
+        return [ln for ln in lines if ln][:3]
+    except Exception:  # noqa: BLE001
+        return []
 
 
 def _format_context(passages: list[dict]) -> str:
@@ -205,3 +225,54 @@ def answer(question: str, session_id: str = "", top_k: int | None = None) -> dic
 
     return {"answer": text, "sources": sources, "passages": shown_passages,
             "search_query": search_query, "intent": "doc"}
+
+
+def answer_stream(question: str, session_id: str = "", top_k: int | None = None):
+    """Generator variant for SSE: yields {'type':'token','text':...} deltas, then a
+    final {'type':'meta', ...} with sources/passages/intent/followups. Same intent
+    routing and grounding as answer()."""
+    history = memory.get_history(session_id)
+    intent = _classify(history, question)
+
+    if intent == "SMALLTALK":
+        reply = _smalltalk_reply(history, question)
+        _record(session_id, question, reply)
+        yield {"type": "token", "text": reply}
+        yield {"type": "meta", "sources": [], "passages": [], "intent": "smalltalk", "followups": []}
+        return
+    if intent == "META":
+        _record(session_id, question, CAPABILITY_TEXT)
+        yield {"type": "token", "text": CAPABILITY_TEXT}
+        yield {"type": "meta", "sources": [], "passages": [], "intent": "meta", "followups": []}
+        return
+
+    search_query = _condense(history, question)
+    passages = retriever.retrieve(search_query, top_k=top_k)
+    if not retriever.passes_threshold(passages):
+        _record(session_id, question, REFUSAL)
+        yield {"type": "token", "text": REFUSAL}
+        yield {"type": "meta", "sources": [], "passages": [], "intent": "doc", "followups": []}
+        return
+
+    messages = [{"role": "system", "content": ANSWER_SYSTEM}]
+    messages.extend(history)
+    messages.append({"role": "user",
+                     "content": f"CONTEXT passages:\n\n{_format_context(passages)}\n\n---\nQuestion: {question}"})
+
+    acc = ""
+    for delta in chat_messages_stream(messages):
+        acc += delta
+        yield {"type": "token", "text": delta}
+
+    text = acc.strip()
+    refused = REFUSAL.rstrip(".").lower() in text.lower()
+    if refused:
+        sources, shown, followups = [], [], []
+    else:
+        sources = sorted({p["source"] for p in passages})
+        shown = passages
+        followups = _suggest_followups(question, text)
+
+    _record(session_id, question, text)
+    yield {"type": "meta", "sources": sources, "passages": shown,
+           "intent": "doc", "followups": followups}
