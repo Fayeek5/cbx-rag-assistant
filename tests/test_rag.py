@@ -7,6 +7,34 @@ from __future__ import annotations
 from app import rag, memory
 
 
+def test_smalltalk_greeting_no_retrieval(populated_store, mock_llm):
+    mock_llm["reply"] = "Hi! Ask me anything about the CBX documentation."
+    out = rag.answer("hi", session_id="st1")
+    assert out["intent"] == "smalltalk"
+    assert out["sources"] == [] and out["passages"] == []
+    assert out["answer"] != rag.REFUSAL
+
+
+def test_smalltalk_how_are_you(populated_store, mock_llm):
+    out = rag.answer("how are you?", session_id="st2")
+    assert out["intent"] == "smalltalk"
+    assert out["answer"] != rag.REFUSAL  # not a blunt refusal anymore
+
+
+def test_meta_capability_question(populated_store, mock_llm):
+    out = rag.answer("what can you do?", session_id="st3")
+    assert out["intent"] == "meta"
+    assert out["sources"] == []
+    assert "documentation assistant" in out["answer"].lower()
+
+
+def test_doc_question_still_routes_to_docs(populated_store, mock_llm):
+    mock_llm["reply"] = "Codelist fields are {code, name, version}.\nSources: api.md"
+    out = rag.answer("what shape is a codelist field?", session_id="st4")
+    assert out["intent"] == "doc"
+    assert out["sources"]  # went through retrieval
+
+
 def test_clean_answer_strips_sources_line():
     assert rag._clean_answer("The answer.\nSources: a.md, b.md") == "The answer."
     assert rag._clean_answer("Answer only") == "Answer only"

@@ -4,6 +4,22 @@ The assistant holds a normal multi-turn conversation — you can ask a question,
 then follow up with "why is that needed?" or "how do I fix it?" — while every
 FACT it states stays locked to the indexed documentation.
 
+## Intent gate (converse normally, gate facts)
+
+Before anything touches the docs, each message is classified:
+
+| Intent | Examples | Behaviour |
+|---|---|---|
+| **SMALLTALK** | "hi", "thanks", "how are you?", "bye" | warm one-line reply · no retrieval · no sources |
+| **META** | "what can you do?", "who are you?" | fixed capability description · no sources |
+| **DOC** | everything else, incl. follow-ups ("why?", "tell me more") | retrieval + strict grounding · with sources |
+
+Obvious greetings/meta are matched by a fast regex (no LLM call); ambiguous
+messages are classified by the LLM, **defaulting to DOC** so factual grounding is
+never skipped by accident. This is why "hi" no longer returns source chips and
+"how are you?" no longer returns a blunt refusal — while real questions stay
+strictly grounded.
+
 ## The two-step turn
 
 Each turn runs two LLM steps so memory and grounding don't fight each other:

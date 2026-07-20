@@ -2,6 +2,27 @@
 
 All notable changes to cbx-rag are recorded here. Newest first.
 
+## [0.6.0] — 2026-07-20 — Intent routing (converse normally, gate facts)
+
+### Added
+- **Intent gate** (`app/rag.py`) so the assistant converses like a normal chatbot
+  while still gating FACTS to the docs. Each message is classified first:
+  - **SMALLTALK** (hi, thanks, how are you, bye) → a warm one-line reply, no
+    retrieval, no sources.
+  - **META** (what can you do, who are you) → fixed capability description, no sources.
+  - **DOC** (everything else, incl. follow-ups) → existing retrieval + strict
+    grounding, with sources.
+  - Fast regex fast-path for obvious greeting/meta phrasing (no LLM call); LLM
+    classification for the rest, defaulting to DOC so grounding is never skipped
+    by mistake.
+- `/ask` responses now include an `intent` field (`smalltalk` | `meta` | `doc`).
+- 4 new tests (intent routing); suite now 42 tests, all green.
+
+### Fixed
+- Greetings like "hi" no longer wrongly attach source chips / retrieved passages,
+  and "how are you?" no longer returns a blunt "I don't have that in the
+  documentation." (both seen in live use).
+
 ## [0.5.0] — 2026-07-20 — Full test suite + loading-UX fix
 
 ### Added
