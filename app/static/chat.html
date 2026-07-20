@@ -66,7 +66,15 @@
     background: #10151c; border-radius: 4px; color: #c9d1d9;
   }
   .passage .meta { color: var(--muted); font-size: 11px; margin-bottom: 4px; }
-  .typing { color: var(--muted); font-style: italic; font-size: 13px; }
+  .typing { color: var(--muted); font-style: italic; font-size: 13px; display: inline-flex; align-items: center; gap: 8px; }
+  .dots { display: inline-flex; gap: 3px; }
+  .dots span {
+    width: 5px; height: 5px; border-radius: 50%; background: var(--accent-fg);
+    animation: blink 1.4s infinite both;
+  }
+  .dots span:nth-child(2) { animation-delay: .2s; }
+  .dots span:nth-child(3) { animation-delay: .4s; }
+  @keyframes blink { 0%, 80%, 100% { opacity: .2; } 40% { opacity: 1; } }
   footer {
     border-top: 1px solid var(--border); padding: 16px;
     background: var(--panel);
@@ -184,7 +192,18 @@ async function ask() {
 
   const botMsg = addMsg('bot', '');
   const bubble = botMsg.querySelector('.bubble');
-  bubble.innerHTML = '<span class="typing">Searching the docs…</span>';
+
+  // phased, animated indicator that reflects the real pipeline
+  const phases = ['Searching the documentation', 'Reading the sources', 'Writing a grounded answer'];
+  let phase = 0;
+  const dots = '<span class="dots"><span></span><span></span><span></span></span>';
+  const renderPhase = () => { bubble.innerHTML = `<span class="typing">${phases[phase]} ${dots}</span>`; };
+  renderPhase();
+  const phaseTimer = setInterval(() => {
+    phase = Math.min(phase + 1, phases.length - 1);
+    renderPhase();
+    if (phase === phases.length - 1) clearInterval(phaseTimer);
+  }, 1300);
 
   try {
     const res = await fetch('/ask', {
@@ -193,6 +212,7 @@ async function ask() {
       body: JSON.stringify({ question: text, session_id: sessionId })
     });
     const data = await res.json();
+    clearInterval(phaseTimer);
 
     bubble.textContent = data.answer || '(no answer)';
 
@@ -221,6 +241,7 @@ async function ask() {
       botMsg.appendChild(det);
     }
   } catch (err) {
+    clearInterval(phaseTimer);
     bubble.textContent = '⚠️ Error: ' + err.message + ' (is the server running?)';
   } finally {
     send.disabled = false;

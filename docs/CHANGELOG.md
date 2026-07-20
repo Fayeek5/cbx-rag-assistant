@@ -2,6 +2,33 @@
 
 All notable changes to cbx-rag are recorded here. Newest first.
 
+## [0.5.0] — 2026-07-20 — Full test suite + loading-UX fix
+
+### Added
+- **Automated test suite (38 tests, pytest)** — all green in ~8s, LLM mocked so
+  no Ollama/network needed:
+  - `test_ingest.py` — chunking, size limits, loaders, file discovery
+  - `test_embeddings.py` — shape, L2 normalization, semantic ordering (real bge-small)
+  - `test_vectorstore.py` — add/query/count/reset, upsert idempotency, top-k
+  - `test_memory.py` — append/get, per-session isolation, history cap, reset
+  - `test_rag.py` — answer cleaning, refusal→no sources, memory wiring, condense
+  - `test_llm.py` — payload shape, LB→backend failover, all-fail raises
+  - `test_api.py` — `/`, `/health`, `/search`, `/ask`, `/reset`, validation (TestClient)
+  - `conftest.py` fixtures: isolated Chroma store, populated store, mocked LLM
+- `requirements-dev.txt`, `pytest.ini`.
+
+### Changed
+- **Loading UX**: replaced the single static "Searching the docs…" (misleading —
+  most of the wait is generation) with an animated, phased indicator:
+  *Searching the documentation → Reading the sources → Writing a grounded answer*,
+  with blinking dots. Cleared on response/error.
+- Removed the old `test_smoke.py` (superseded by the suite).
+
+### How to run
+    source .venv/bin/activate
+    pip install -r requirements-dev.txt
+    python -m pytest
+
 ## [0.4.0] — 2026-07-20 — Conversational memory (with strict grounding)
 
 ### Added

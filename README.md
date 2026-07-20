@@ -52,8 +52,9 @@ See [`docs/01-architecture.md`](docs/01-architecture.md) for the full picture.
 source .venv/bin/activate
 python scripts/ingest_docs.py sample_docs/
 
-# 3. verify retrieval works without the LLM
-python -m pytest tests/ -v
+# 3. run the test suite (38 tests, no Ollama needed — LLM is mocked)
+pip install -r requirements-dev.txt
+python -m pytest
 
 # 4. start everything
 ./scripts/run_all.sh
