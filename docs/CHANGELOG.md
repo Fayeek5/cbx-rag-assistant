@@ -2,6 +2,37 @@
 
 All notable changes to cbx-rag are recorded here. Newest first.
 
+## [0.2.0] — 2026-07-20 — Real CBX corpus ingested & validated
+
+### Added
+- Ingested the full CBX documentation corpus — **270 chunks** total:
+  - `TRADEBEYOND_KNOWLEDGE_BASE.md` (83), `CBX_API_HANDOUT.md` (20)
+  - WBA As-Is workflow docs, incl. detailed summary (34)
+  - 7 TBY training PDFs — 12–14 May sessions (133)
+
+### Changed
+- **Hardened the grounded system prompt** (`app/rag.py`): the model must always
+  write the answer body first and may never return a "Sources:"-only reply. Fixed
+  a reproducible case where qwen2.5:7b emitted only a sources line for the
+  "No records found / OpenSearch" question.
+
+### Verified (live, against the real CBX corpus)
+- "What causes a 500 when importing colors?" → correct: codelist field sent as a
+  plain string instead of `{code, name, version}`.
+- "Correct shape for a codelist field?" → correct: `{code, name, version}`.
+- "What must be configured before creating an item?" → correct: Code Lists first.
+- "Why does a list show 'No records found'?" → correct: missing OpenSearch index
+  (`index_not_found_exception`), a backend infra issue, fix = provision the index.
+- "How is supplier approval routed by D&B risk?" → correct: Low = auto-approve,
+  Medium/High = manual Sourcing Approver review.
+- Guardrail intact: out-of-scope ("vacation policy?") → "I don't have that in the
+  documentation."
+
+### Known minor item (Phase 2)
+- The in-answer "Sources:" line sometimes shows the passage number (e.g. `<1>`)
+  instead of the filename. Cosmetic only — the JSON `sources` field returned by
+  the API is always accurate (derived from chunk metadata, not the LLM text).
+
 ## [0.1.1] — 2026-07-20 — Python 3.9 fix + full end-to-end verification
 
 ### Fixed

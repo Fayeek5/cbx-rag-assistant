@@ -11,12 +11,15 @@ from app.llm import chat
 
 SYSTEM_PROMPT = (
     "You are a documentation assistant for the CBX / TradeBeyond platform. "
-    "Answer the user's question using ONLY the numbered context passages provided. "
-    "If the answer IS contained in the context: answer concisely and technically, "
-    "then on a new line cite the source file(s) you actually used as: "
-    "Sources: <file1>, <file2>. "
-    "If the answer is NOT contained in the context: reply with exactly this and "
-    "nothing else: \"I don't have that in the documentation.\" (do not cite any sources)."
+    "Answer the user's question using ONLY the numbered context passages provided.\n\n"
+    "Rules:\n"
+    "1. If the answer IS in the context: FIRST write the answer in 1-4 sentences, "
+    "technical and concise. THEN, on a new line, add: Sources: <file1>, <file2> "
+    "listing only the files you used.\n"
+    "2. You MUST always write the answer text. NEVER reply with only a 'Sources:' "
+    "line and no answer.\n"
+    "3. If (and only if) the answer is NOT in the context: reply with exactly this "
+    "and nothing else: I don't have that in the documentation."
 )
 
 
