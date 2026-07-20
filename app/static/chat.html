@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CBX Assistant</title>
+<style>
+  :root {
+    --bg: #0d1117; --panel: #161b22; --border: #30363d; --text: #e6edf3;
+    --muted: #8b949e; --accent: #1565C0; --accent-fg: #58a6ff;
+    --user: #1f2d44; --bot: #161b22; --ok: #238636;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg); color: var(--text); height: 100vh;
+    display: flex; flex-direction: column;
+  }
+  header {
+    background: linear-gradient(135deg, #003366, #005599);
+    padding: 14px 20px; border-bottom: 1px solid var(--accent);
+    display: flex; align-items: center; gap: 12px;
+  }
+  header h1 { font-size: 16px; font-weight: 700; color: #fff; }
+  header .badge {
+    margin-left: auto; font-size: 11px; color: #90CAF9;
+    background: rgba(255,255,255,.1); padding: 3px 10px; border-radius: 20px;
+  }
+  #chat {
+    flex: 1; overflow-y: auto; padding: 24px;
+    display: flex; flex-direction: column; gap: 16px;
+    max-width: 900px; width: 100%; margin: 0 auto;
+  }
+  .msg { display: flex; flex-direction: column; gap: 4px; max-width: 85%; }
+  .msg.user { align-self: flex-end; align-items: flex-end; }
+  .msg.bot { align-self: flex-start; }
+  .bubble {
+    padding: 12px 16px; border-radius: 12px; font-size: 14px; line-height: 1.55;
+    white-space: pre-wrap; word-wrap: break-word;
+  }
+  .user .bubble { background: var(--user); border: 1px solid #2a3f5f; border-bottom-right-radius: 4px; }
+  .bot .bubble { background: var(--bot); border: 1px solid var(--border); border-bottom-left-radius: 4px; }
+  .role { font-size: 11px; color: var(--muted); padding: 0 4px; }
+  .sources {
+    margin-top: 6px; font-size: 12px; color: var(--muted);
+    display: flex; flex-wrap: wrap; gap: 6px; align-items: center;
+  }
+  .src-chip {
+    background: #0d1117; border: 1px solid var(--border); border-radius: 6px;
+    padding: 2px 8px; color: var(--accent-fg); font-size: 11px;
+  }
+  details {
+    margin-top: 8px; font-size: 12px; background: #0d1117;
+    border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px;
+  }
+  details summary { cursor: pointer; color: var(--muted); user-select: none; }
+  details summary:hover { color: var(--text); }
+  .passage {
+    margin-top: 8px; padding: 8px; border-left: 2px solid var(--accent);
+    background: #10151c; border-radius: 4px; color: #c9d1d9;
+  }
+  .passage .meta { color: var(--muted); font-size: 11px; margin-bottom: 4px; }
+  .typing { color: var(--muted); font-style: italic; font-size: 13px; }
+  footer {
+    border-top: 1px solid var(--border); padding: 16px;
+    background: var(--panel);
+  }
+  .input-row {
+    max-width: 900px; margin: 0 auto; display: flex; gap: 10px;
+  }
+  #q {
+    flex: 1; background: #0d1117; border: 1px solid var(--border);
+    border-radius: 10px; padding: 12px 14px; color: var(--text); font-size: 14px;
+    resize: none; font-family: inherit; max-height: 120px;
+  }
+  #q:focus { outline: none; border-color: var(--accent-fg); }
+  #send {
+    background: var(--accent); color: #fff; border: none; border-radius: 10px;
+    padding: 0 22px; font-size: 14px; font-weight: 600; cursor: pointer;
+  }
+  #send:hover { background: #1a75d1; }
+  #send:disabled { opacity: .5; cursor: not-allowed; }
+  .hint { max-width: 900px; margin: 8px auto 0; font-size: 11px; color: var(--muted); }
+  .empty { color: var(--muted); text-align: center; margin-top: 40px; font-size: 14px; line-height: 1.7; }
+  .empty code { background: var(--panel); padding: 2px 6px; border-radius: 4px; color: var(--accent-fg); }
+</style>
+</head>
+<body>
+<header>
+  <h1>🔎 CBX Documentation Assistant</h1>
+  <span class="badge" id="status">connecting…</span>
+</header>
+
+<div id="chat">
+  <div class="empty" id="empty">
+    Ask a question about the CBX / TradeBeyond platform.<br>
+    Answers come only from the indexed documentation, with sources.<br><br>
+    Try: <code>What causes a 500 error when importing colors?</code>
+  </div>
+</div>
+
+<footer>
+  <div class="input-row">
+    <textarea id="q" rows="1" placeholder="Ask about CBX… (Enter to send, Shift+Enter for newline)"></textarea>
+    <button id="send">Send</button>
+  </div>
+  <div class="hint">Grounded in indexed docs only · answers cite their source files · says “I don’t have that” when unknown.</div>
+</footer>
+
+<script>
+const chat = document.getElementById('chat');
+const q = document.getElementById('q');
+const send = document.getElementById('send');
+const empty = document.getElementById('empty');
+const statusEl = document.getElementById('status');
+
+// show index status
+fetch('/health').then(r => r.json()).then(d => {
+  statusEl.textContent = `${d.indexed_chunks} chunks · ${d.llm_model}`;
+}).catch(() => { statusEl.textContent = 'offline'; });
+
+// auto-grow textarea
+q.addEventListener('input', () => {
+  q.style.height = 'auto';
+  q.style.height = Math.min(q.scrollHeight, 120) + 'px';
+});
+
+q.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); ask(); }
+});
+send.addEventListener('click', ask);
+
+function addMsg(role, text) {
+  const msg = document.createElement('div');
+  msg.className = 'msg ' + role;
+  msg.innerHTML = `<div class="role">${role === 'user' ? 'You' : 'Assistant'}</div>
+                   <div class="bubble"></div>`;
+  msg.querySelector('.bubble').textContent = text;
+  chat.appendChild(msg);
+  chat.scrollTop = chat.scrollHeight;
+  return msg;
+}
+
+function escapeHtml(s) {
+  return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+async function ask() {
+  const text = q.value.trim();
+  if (!text) return;
+  if (empty) empty.remove();
+
+  addMsg('user', text);
+  q.value = ''; q.style.height = 'auto';
+  send.disabled = true;
+
+  const botMsg = addMsg('bot', '');
+  const bubble = botMsg.querySelector('.bubble');
+  bubble.innerHTML = '<span class="typing">Searching the docs…</span>';
+
+  try {
+    const res = await fetch('/ask', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ question: text })
+    });
+    const data = await res.json();
+
+    bubble.textContent = data.answer || '(no answer)';
+
+    // sources
+    if (data.sources && data.sources.length) {
+      const src = document.createElement('div');
+      src.className = 'sources';
+      src.innerHTML = '<span>Sources:</span>' +
+        data.sources.map(s => `<span class="src-chip">${escapeHtml(s.split('/').pop())}</span>`).join('');
+      botMsg.appendChild(src);
+    }
+
+    // expandable retrieved passages (for verification)
+    if (data.passages && data.passages.length) {
+      const det = document.createElement('details');
+      det.innerHTML = `<summary>Show ${data.passages.length} retrieved passages</summary>`;
+      data.passages.forEach((p, i) => {
+        const div = document.createElement('div');
+        div.className = 'passage';
+        div.innerHTML = `<div class="meta">[${i+1}] ${escapeHtml(p.source.split('/').pop())} · score ${p.score.toFixed(3)}</div>`;
+        const body = document.createElement('div');
+        body.textContent = p.text;
+        div.appendChild(body);
+        det.appendChild(div);
+      });
+      botMsg.appendChild(det);
+    }
+  } catch (err) {
+    bubble.textContent = '⚠️ Error: ' + err.message + ' (is the server running?)';
+  } finally {
+    send.disabled = false;
+    q.focus();
+    chat.scrollTop = chat.scrollHeight;
+  }
+}
+</script>
+</body>
+</html>

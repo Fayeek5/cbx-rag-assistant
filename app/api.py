@@ -9,9 +9,11 @@ Run:  uvicorn app.api:app --host 127.0.0.1 --port 8000
 """
 from __future__ import annotations
 
+import os
 from typing import Optional
 
 from fastapi import FastAPI
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 from config import settings
@@ -19,6 +21,14 @@ from app import vectorstore
 from app.rag import answer
 
 app = FastAPI(title="CBX RAG API", version="0.1.0")
+
+_CHAT_HTML = os.path.join(os.path.dirname(__file__), "static", "chat.html")
+
+
+@app.get("/")
+def chat_ui():
+    """Serve the chat UI (single self-contained page)."""
+    return FileResponse(_CHAT_HTML)
 
 
 class AskRequest(BaseModel):

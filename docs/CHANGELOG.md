@@ -2,6 +2,20 @@
 
 All notable changes to cbx-rag are recorded here. Newest first.
 
+## [0.3.0] — 2026-07-20 — Chat UI
+
+### Added
+- **Chat UI** served by the existing FastAPI app at `http://127.0.0.1:8000/`
+  (`app/static/chat.html`, served via a new `GET /` route). Single self-contained
+  page, no new dependencies, no extra server.
+- Features: question box (Enter to send, Shift+Enter newline), user/assistant
+  bubbles, source-file chips under each answer, an expandable "retrieved passages"
+  panel (with similarity scores) for verification, and a live index/model status
+  badge in the header (reads `/health`).
+
+### Verified
+- `GET /` serves the page; `POST /ask` returns grounded answers with sources.
+
 ## [0.2.1] — 2026-07-20 — Remove client-specific (WBA) data from the index
 
 ### Changed
