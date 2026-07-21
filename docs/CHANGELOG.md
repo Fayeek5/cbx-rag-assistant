@@ -2,6 +2,22 @@
 
 All notable changes to cbx-rag are recorded here. Newest first.
 
+## [0.8.1] — 2026-07-21 — Fix false refusals (retrieval threshold calibration)
+
+### Fixed
+- **Real documented topics were being wrongly refused** ("I don't have that").
+  Root cause: the hard relevance gate was thresholding the cross-encoder's sigmoid
+  score, which is tiny (~0.003) even for strongly relevant passages, so almost
+  everything was rejected before the LLM. The reranker was also burying good vector
+  hits (e.g. demoting the correct "Shared Files" chunk).
+- The gate now uses the **calibrated vector similarity** (`vscore`, 0-1;
+  relevant ≈ 0.6-0.8) with `min_relevance = 0.35`, and ordering **blends** vector +
+  reranker (`0.6·vector + 0.4·reranker`) so the reranker refines order but can never
+  bury a strong vector hit.
+- Verified: "shared files", "business templates", "critical path template", "ELC",
+  "sample requests", "500 error", "supplier onboarding" all answer correctly;
+  off-topic ("capital of France", "sourdough bread") still refused by the LLM gate.
+
 ## [0.8.0] — 2026-07-20 — CBX-branded UI theme
 
 ### Changed

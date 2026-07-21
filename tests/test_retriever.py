@@ -24,11 +24,15 @@ def test_bm25_arm_catches_exact_identifier(populated_store, monkeypatch):
     assert any("thinknessUOM" in r["text"] for r in results)
 
 
-def test_threshold_blocks_irrelevant(populated_store):
-    results = retriever.retrieve("xyzzy quantum banana teleportation", top_k=3)
-    # either nothing relevant, or the top score is low -> gate should fail
-    assert retriever.passes_threshold(results) is (
-        bool(results) and results[0]["score"] >= 0.02)
+def test_relevant_query_passes_threshold(populated_store):
+    results = retriever.retrieve("how do I fix a 401 unauthorized error", top_k=3)
+    assert results and retriever.passes_threshold(results)
+
+
+def test_threshold_gates_on_vector_score():
+    # gate uses vscore (calibrated), not the reranker's tiny sigmoid
+    assert retriever.passes_threshold([{"vscore": 0.9, "text": "x"}]) is True
+    assert retriever.passes_threshold([{"vscore": 0.10, "text": "x"}]) is False
 
 
 def test_passes_threshold_empty():

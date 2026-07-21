@@ -28,7 +28,7 @@ class Settings(BaseSettings):
     use_hybrid: bool = True        # combine vector + BM25 keyword search
     use_reranker: bool = True      # cross-encoder rerank of the merged candidates
     reranker_model: str = "cross-encoder/ms-marco-MiniLM-L-6-v2"
-    min_relevance: float = 0.02    # hard gate: best reranked score below this -> refuse
+    min_relevance: float = 0.35    # hard gate on VECTOR similarity (0-1): below -> refuse
 
     # Conversation memory — how many prior turns to remember per session
     history_turns: int = 6

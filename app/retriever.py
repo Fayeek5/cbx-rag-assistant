@@ -63,49 +63,59 @@ def _sigmoid(x: float) -> float:
 
 
 # ── Public API ───────────────────────────────────────────────────────────
+# Ordering blends the calibrated vector similarity with the reranker so the
+# reranker refines the order but can NEVER bury a strong vector hit. The relevance
+# gate uses the vector similarity ('vscore', 0-1, well-calibrated) — NOT the
+# reranker's sigmoid, which is tiny even for good matches.
+_RERANK_WEIGHT = 0.4
+
+
 def retrieve(query: str, top_k: int | None = None) -> list[dict]:
-    """Return the best passages for a query using hybrid + rerank + threshold.
-    Each result has text/source/chunk_index plus a normalized 'score' (0-1)."""
+    """Return the best passages using hybrid candidates + reranked ordering.
+    Each result carries 'vscore' (vector similarity, used for gating + display as
+    'score') and 'rscore' (reranker confidence)."""
     k = top_k or settings.top_k
     cand_k = max(settings.candidate_k, k)
 
-    # 1. vector arm (also our fallback if everything else is off)
+    # 1. vector arm — calibrated 0-1 similarity
     vector_hits = vectorstore.query(query, top_k=cand_k)
 
-    if not settings.use_hybrid and not settings.use_reranker:
-        return vector_hits[:k]
-
-    # 2+3. merge vector + BM25 candidates, dedup by id
     merged: dict[str, dict] = {}
     for h in vector_hits:
-        merged[f"{h['source']}::{h['chunk_index']}"] = {
-            "text": h["text"], "source": h["source"], "chunk_index": h["chunk_index"]}
+        cid = f"{h['source']}::{h['chunk_index']}"
+        merged[cid] = {"text": h["text"], "source": h["source"],
+                       "chunk_index": h["chunk_index"], "vscore": h.get("score", 0.0)}
+    # 2. BM25 arm — recall for exact identifiers (no vector score of its own)
     if settings.use_hybrid:
         for h in _bm25_candidates(query, cand_k):
-            merged.setdefault(h["id"], {
-                "text": h["text"], "source": h["source"], "chunk_index": h["chunk_index"]})
+            merged.setdefault(h["id"], {"text": h["text"], "source": h["source"],
+                                        "chunk_index": h["chunk_index"], "vscore": 0.0})
 
     candidates = list(merged.values())
     if not candidates:
         return []
 
-    # 4. rerank
+    # 3. rerank for ordering, blended with vector so strong vector hits stay up
     if settings.use_reranker:
-        pairs = [(query, c["text"]) for c in candidates]
-        raw = _reranker().predict(pairs)
+        raw = _reranker().predict([(query, c["text"]) for c in candidates])
         for c, s in zip(candidates, raw):
-            c["score"] = _sigmoid(float(s))
-        candidates.sort(key=lambda c: c["score"], reverse=True)
+            c["rscore"] = _sigmoid(float(s))
+            c["final"] = (1 - _RERANK_WEIGHT) * c["vscore"] + _RERANK_WEIGHT * c["rscore"]
     else:
-        # keep vector order; carry its similarity score
-        for c, h in zip(candidates, vector_hits):
-            c["score"] = h.get("score", 0.0)
+        for c in candidates:
+            c["rscore"] = 0.0
+            c["final"] = c["vscore"]
 
+    candidates.sort(key=lambda c: c["final"], reverse=True)
+    for c in candidates:
+        c["score"] = c["vscore"]  # displayed/returned score = calibrated similarity
     return candidates[:k]
 
 
 def passes_threshold(passages: list[dict]) -> bool:
-    """True if the best passage is relevant enough to answer from (hard gate)."""
+    """Hard relevance gate: True only if some passage's VECTOR similarity clears
+    min_relevance. Vector scores are calibrated (relevant ~0.6+, off-topic lower),
+    unlike the reranker's near-zero sigmoids."""
     if not passages:
         return False
-    return passages[0].get("score", 0.0) >= settings.min_relevance
+    return max(p.get("vscore", p.get("score", 0.0)) for p in passages) >= settings.min_relevance
