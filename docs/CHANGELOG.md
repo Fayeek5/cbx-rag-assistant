@@ -2,6 +2,21 @@
 
 All notable changes to cbx-rag are recorded here. Newest first.
 
+## [0.8.0] — 2026-07-20 — CBX-branded UI theme
+
+### Changed
+- Reskinned the chat UI to match the CBX / TradeBeyond look: light sky gradient
+  with rolling hills (recreated in SVG), the tradebeyond logo + wordmark, and a
+  white conversation card. No login form and no disclaimer/attention text — this
+  is the internal documentation assistant, not the product login.
+- All functionality unchanged (streaming, markdown, inline citations, feedback,
+  follow-ups, memory, intent routing).
+
+### Note
+- The hills background and logo are CSS/SVG recreations (the real brand asset
+  files aren't in the repo). Drop the actual image/logo into `app/static/` and
+  swap the SVG blocks to use them if exact brand assets are required.
+
 ## [0.7.0] — 2026-07-20 — Streaming, inline citations, markdown, feedback, follow-ups
 
 ### Added
