@@ -59,10 +59,10 @@
   #ticket { width: 100%; background: #fff; border: 1px solid var(--line); border-radius: 12px;
     padding: 12px 14px; color: var(--ink); font-size: 14px; resize: vertical; font-family: inherit; }
   #ticket:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(43,125,233,.15); }
-  #assist-btn { margin-top: 10px; background: var(--accent); color: #fff; border: none; border-radius: 12px;
-    padding: 10px 20px; font-size: 14px; font-weight: 600; cursor: pointer; }
+  #assist-btn { background: var(--accent); color: #fff; border: 1px solid var(--accent); border-radius: 12px;
+    padding: 10px 20px; font-size: 14px; font-weight: 600; line-height: 1.2; cursor: pointer; }
   #assist-btn:hover { background: #1a75d1; } #assist-btn:disabled { opacity: .5; cursor: not-allowed; }
-  .secondary { background: #fff; color: #35506b; border: 1px solid var(--line); border-radius: 12px; padding: 10px 18px; font-size: 14px; cursor: pointer; }
+  .secondary { background: #fff; color: #35506b; border: 1px solid var(--line); border-radius: 12px; padding: 10px 20px; font-size: 14px; font-weight: 600; line-height: 1.2; cursor: pointer; }
   .secondary:hover { background: #f4f8fc; }
   #assist-out { margin-top: 18px; }
   /* connector cards */
@@ -223,7 +223,7 @@
     <div class="assist-body">
       <label class="lbl">Paste the incoming ticket / customer problem</label>
       <textarea id="ticket" rows="5" placeholder="e.g. Customer says the colors list shows 'No records found' even though the import succeeded…"></textarea>
-      <div style="margin-top:10px;display:flex;gap:8px">
+      <div style="margin-top:10px;display:flex;gap:8px;align-items:center">
         <button id="assist-btn">Draft triage</button>
         <button id="assist-clear" class="secondary">Clear</button>
       </div>
