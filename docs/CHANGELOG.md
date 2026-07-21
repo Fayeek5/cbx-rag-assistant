@@ -2,6 +2,19 @@
 
 All notable changes to cbx-rag are recorded here. Newest first.
 
+## [0.14.0] — 2026-07-21 — Sources (connectors) UI + Agent Assist clear
+
+### Added
+- **Sources tab** in the UI to manage ticket connectors without the CLI:
+  - `GET /connectors` — lists Jira/Zendesk/Freshservice/Generic with configured
+    status + what `.env` keys are missing (no secrets exposed).
+  - `POST /connectors/{name}/sync` — fetch resolved tickets and ingest them, or
+    `dry_run` for a preview; 400 if unconfigured, 404 for unknown source.
+  - UI cards show configured/not-configured, the exact keys to set, and
+    **Sync now** / **Dry-run** buttons; syncing updates the chunk count badge.
+- **Clear** button in Agent Assist to reset the ticket input + draft.
+- 3 connector-endpoint tests (suite now 78, all green).
+
 ## [0.13.0] — 2026-07-21 — Phase 2 UI (Agent Assist + Metrics) + markdown fix
 
 ### Added

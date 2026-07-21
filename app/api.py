@@ -23,6 +23,8 @@ from pydantic import BaseModel
 from config import settings
 from app import vectorstore, memory, telemetry
 from app.rag import answer, answer_stream, assist, REFUSAL
+from app.connectors import REGISTRY, get_connector
+from app.tickets import tickets_to_chunks
 
 app = FastAPI(title="CBX RAG API", version="0.1.0")
 
@@ -161,6 +163,43 @@ def assist_endpoint(req: AssistRequest):
     if _too_long(req.ticket):
         return JSONResponse({"detail": f"Ticket too long (max {MAX_QUESTION_CHARS} chars)."}, status_code=400)
     return assist(req.ticket, top_k=req.top_k)
+
+
+# ── Ticket connectors ────────────────────────────────────────────────────
+class SyncRequest(BaseModel):
+    limit: Optional[int] = 100
+    dry_run: bool = False
+
+
+@app.get("/connectors")
+def list_connectors():
+    """List ticket connectors with their configured status (no secrets exposed)."""
+    out = []
+    for name in REGISTRY:
+        err = get_connector(name).check_config()
+        out.append({"name": name, "configured": err is None, "message": err})
+    return {"connectors": out}
+
+
+@app.post("/connectors/{name}/sync")
+def sync_connector(name: str, req: SyncRequest):
+    """Fetch resolved tickets from a source and ingest them (or dry-run preview)."""
+    try:
+        conn = get_connector(name)
+    except ValueError as e:
+        return JSONResponse({"detail": str(e)}, status_code=404)
+    err = conn.check_config()
+    if err:
+        return JSONResponse({"detail": err}, status_code=400)
+    try:
+        tickets = conn.fetch(limit=req.limit)
+    except Exception as e:  # noqa: BLE001
+        return JSONResponse({"detail": f"Fetch failed: {e}"}, status_code=502)
+    if req.dry_run:
+        return {"fetched": len(tickets), "ingested": 0, "dry_run": True,
+                "sample": [{"id": t.get("id"), "summary": t.get("summary")} for t in tickets[:5]]}
+    added = vectorstore.add_chunks(tickets_to_chunks(tickets))
+    return {"fetched": len(tickets), "ingested": added, "total_chunks": vectorstore.count()}
 
 
 @app.post("/reset")

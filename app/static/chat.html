@@ -62,7 +62,21 @@
   #assist-btn { margin-top: 10px; background: var(--accent); color: #fff; border: none; border-radius: 12px;
     padding: 10px 20px; font-size: 14px; font-weight: 600; cursor: pointer; }
   #assist-btn:hover { background: #1a75d1; } #assist-btn:disabled { opacity: .5; cursor: not-allowed; }
+  .secondary { background: #fff; color: #35506b; border: 1px solid var(--line); border-radius: 12px; padding: 10px 18px; font-size: 14px; cursor: pointer; }
+  .secondary:hover { background: #f4f8fc; }
   #assist-out { margin-top: 18px; }
+  /* connector cards */
+  .conn-card { background: var(--bot); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; margin-bottom: 12px; }
+  .conn-head { display: flex; align-items: center; gap: 10px; }
+  .conn-name { font-size: 14px; font-weight: 700; text-transform: capitalize; }
+  .pill { font-size: 11px; font-weight: 700; padding: 2px 10px; border-radius: 20px; }
+  .pill.ok { background: #e3f6ea; color: #1f7a44; } .pill.no { background: #fdecea; color: #b23b3b; }
+  .conn-msg { font-size: 12px; color: var(--muted); margin-top: 6px; }
+  .conn-actions { margin-top: 10px; display: flex; gap: 8px; align-items: center; }
+  .conn-actions button { font-size: 13px; border-radius: 8px; padding: 6px 14px; cursor: pointer; border: 1px solid var(--line); }
+  .conn-actions .sync { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .conn-actions .sync:disabled { opacity: .5; cursor: not-allowed; }
+  .conn-result { font-size: 12px; color: var(--ink); margin-top: 8px; }
   .conf { display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 10px; border-radius: 20px; margin-bottom: 10px; }
   .conf.hi { background: #e3f6ea; color: #1f7a44; } .conf.lo { background: #fdecea; color: #b23b3b; }
   .draft { background: var(--bot); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; font-size: 14px; line-height: 1.55; }
@@ -177,6 +191,7 @@
     <nav class="nav">
       <button class="navbtn active" data-view="chat">💬 Chat</button>
       <button class="navbtn" data-view="assist">🛠️ Agent Assist</button>
+      <button class="navbtn" data-view="sources">🔌 Sources</button>
       <button class="navbtn" data-view="metrics">📊 Metrics</button>
     </nav>
     <span class="status" id="status">connecting…</span>
@@ -208,9 +223,22 @@
     <div class="assist-body">
       <label class="lbl">Paste the incoming ticket / customer problem</label>
       <textarea id="ticket" rows="5" placeholder="e.g. Customer says the colors list shows 'No records found' even though the import succeeded…"></textarea>
-      <button id="assist-btn">Draft triage</button>
+      <div style="margin-top:10px;display:flex;gap:8px">
+        <button id="assist-btn">Draft triage</button>
+        <button id="assist-clear" class="secondary">Clear</button>
+      </div>
       <div id="assist-out"></div>
     </div>
+  </div>
+
+  <!-- SOURCES VIEW -->
+  <div class="card view" id="view-sources" style="display:none">
+    <div class="card-head">
+      <h1>Ticket Sources</h1>
+      <span>connect Jira · Zendesk · Freshservice · generic REST</span>
+      <button id="sources-refresh" class="mini">Refresh</button>
+    </div>
+    <div id="sources-out" class="metrics-body"></div>
   </div>
 
   <!-- METRICS VIEW -->
@@ -425,6 +453,7 @@ document.querySelectorAll('.navbtn').forEach(btn => {
     document.querySelectorAll('.view').forEach(v => v.style.display = 'none');
     document.getElementById('view-' + view).style.display = 'flex';
     if (view === 'metrics') loadMetrics();
+    if (view === 'sources') loadConnectors();
     if (view === 'assist') document.getElementById('ticket').focus();
   });
 });
@@ -433,6 +462,9 @@ document.querySelectorAll('.navbtn').forEach(btn => {
 const ticket = document.getElementById('ticket');
 const assistBtn = document.getElementById('assist-btn');
 const assistOut = document.getElementById('assist-out');
+document.getElementById('assist-clear').addEventListener('click', () => {
+  ticket.value = ''; assistOut.innerHTML = ''; ticket.focus();
+});
 assistBtn.addEventListener('click', async () => {
   const text = ticket.value.trim();
   if (!text) return;
@@ -481,6 +513,50 @@ async function loadMetrics() {
       <div class="mrow"><h3>Top cited sources</h3><table class="mtable">${srcRows||'<tr><td class="muted">none</td></tr>'}</table></div>
       <div class="mrow"><h3>Recent questions</h3><table class="mtable">${recentRows||'<tr><td class="muted">none</td></tr>'}</table></div>`;
   } catch (e) { out.innerHTML = `<p class="lbl">⚠️ ${escapeHtml(e.message)}</p>`; }
+}
+
+// ── Ticket Sources (connectors) ──
+document.getElementById('sources-refresh').addEventListener('click', loadConnectors);
+async function loadConnectors() {
+  const out = document.getElementById('sources-out');
+  out.innerHTML = `<span class="typing">Loading sources…</span>`;
+  try {
+    const { connectors } = await (await fetch('/connectors')).json();
+    out.innerHTML = `<p class="lbl">Credentials live in your local <code>.env</code> (never committed).
+      Fill in a source's keys, then Sync to pull resolved tickets into the knowledge base.
+      See <code>docs/07-tickets.md</code>.</p>` +
+      connectors.map(c => {
+        const pill = c.configured ? '<span class="pill ok">configured</span>'
+                                  : '<span class="pill no">not configured</span>';
+        const msg = c.message ? `<div class="conn-msg">${escapeHtml(c.message)}</div>` : '';
+        const btns = c.configured
+          ? `<button class="dry" data-c="${c.name}">Dry-run</button>
+             <button class="sync" data-c="${c.name}">Sync now</button>`
+          : `<button class="sync" disabled>Sync now</button>`;
+        return `<div class="conn-card">
+          <div class="conn-head"><span class="conn-name">${c.name}</span>${pill}</div>
+          ${msg}
+          <div class="conn-actions">${btns}</div>
+          <div class="conn-result" id="cr-${c.name}"></div>
+        </div>`;
+      }).join('');
+    out.querySelectorAll('.sync, .dry').forEach(b =>
+      b.addEventListener('click', () => syncConnector(b.dataset.c, b.classList.contains('dry'))));
+  } catch (e) { out.innerHTML = `<p class="lbl">⚠️ ${escapeHtml(e.message)}</p>`; }
+}
+async function syncConnector(name, dry) {
+  const res = document.getElementById('cr-' + name);
+  res.innerHTML = `<span class="typing">${dry ? 'Fetching preview' : 'Syncing'}… <span class="dots"><span></span><span></span><span></span></span></span>`;
+  try {
+    const r = await fetch(`/connectors/${name}/sync`, { method: 'POST',
+      headers: { 'content-type': 'application/json' }, body: JSON.stringify({ limit: 100, dry_run: dry }) });
+    const d = await r.json();
+    if (!r.ok) { res.innerHTML = `<span style="color:#b23b3b">${escapeHtml(d.detail || 'failed')}</span>`; return; }
+    res.innerHTML = dry
+      ? `Fetched ${d.fetched} ticket(s) (dry-run). ` + (d.sample||[]).map(s => `<div>· ${escapeHtml((s.summary||'').slice(0,70))}</div>`).join('')
+      : `✅ Fetched ${d.fetched}, ingested ${d.ingested}. Collection total: ${d.total_chunks}.`;
+    if (!dry) fetch('/health').then(r=>r.json()).then(h => statusEl.textContent = `${h.indexed_chunks} chunks · ${h.llm_model}`);
+  } catch (e) { res.innerHTML = `<span style="color:#b23b3b">${escapeHtml(e.message)}</span>`; }
 }
 
 // greet on first load

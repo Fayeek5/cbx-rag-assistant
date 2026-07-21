@@ -84,3 +84,22 @@ def test_feedback_endpoint(client, tmp_path, monkeypatch):
 def test_ask_requires_question(client):
     r = client.post("/ask", json={})
     assert r.status_code == 422  # pydantic validation error
+
+
+def test_list_connectors(client):
+    r = client.get("/connectors")
+    assert r.status_code == 200
+    names = {c["name"] for c in r.json()["connectors"]}
+    assert names == {"jira", "zendesk", "freshservice", "generic"}
+    # with no creds set, all report not configured
+    assert all(c["configured"] is False for c in r.json()["connectors"])
+
+
+def test_sync_unconfigured_returns_400(client):
+    r = client.post("/connectors/jira/sync", json={"dry_run": True})
+    assert r.status_code == 400
+
+
+def test_sync_unknown_connector_404(client):
+    r = client.post("/connectors/nope/sync", json={})
+    assert r.status_code == 404
