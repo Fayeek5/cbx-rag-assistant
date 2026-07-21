@@ -281,6 +281,10 @@ newchat.addEventListener('click', async () => {
   sessionId = newId();
   chat.innerHTML = '';
   showGreeting();
+  // always return to the Chat view (New chat is meaningless on other tabs)
+  document.querySelectorAll('.navbtn').forEach(b => b.classList.toggle('active', b.dataset.view === 'chat'));
+  document.querySelectorAll('.view').forEach(v => v.style.display = 'none');
+  document.getElementById('view-chat').style.display = 'flex';
   q.focus();
 });
 
