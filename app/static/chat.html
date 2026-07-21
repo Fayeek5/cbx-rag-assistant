@@ -148,13 +148,7 @@
       <h1>CBX Documentation Assistant</h1>
       <span>grounded in the indexed documentation</span>
     </div>
-    <div id="chat">
-      <div class="empty" id="empty">
-        Ask a question about the CBX / TradeBeyond platform.<br>
-        Answers come only from the indexed documentation, with sources.<br><br>
-        Try: <code>What causes a 500 error when importing colors?</code>
-      </div>
-    </div>
+    <div id="chat"></div>
     <div class="input-wrap">
       <div class="input-row">
         <textarea id="q" rows="1" placeholder="Ask about CBX… (Enter to send, Shift+Enter for newline)"></textarea>
@@ -169,7 +163,6 @@
 const chat = document.getElementById('chat');
 const q = document.getElementById('q');
 const send = document.getElementById('send');
-let empty = document.getElementById('empty');
 const statusEl = document.getElementById('status');
 const newchat = document.getElementById('newchat');
 
@@ -177,22 +170,24 @@ const newId = () => (crypto.randomUUID && crypto.randomUUID()) ||
                     ('s-' + Date.now() + '-' + Math.random().toString(36).slice(2));
 let sessionId = newId();
 
-const EMPTY_HTML = `Ask a question about the CBX / TradeBeyond platform.<br>
-    Answers come only from the indexed documentation, with sources.<br><br>
-    Try: <code>What causes a 500 error when importing colors?</code>`;
+const GREETING = `👋 Hi! I'm the **CBX Documentation Assistant**. Ask me anything about the CBX / TradeBeyond platform — how modules work, API field shapes, error causes, setup prerequisites — and I'll answer from the indexed documentation and cite the sources.\n\nFor example: \`What causes a 500 error when importing colors?\``;
 
 fetch('/health').then(r => r.json()).then(d => {
   statusEl.textContent = `${d.indexed_chunks} chunks · ${d.llm_model}`;
 }).catch(() => { statusEl.textContent = 'offline'; });
+
+// the bot greets the user automatically, before any message
+function showGreeting() {
+  const msg = addMsg('bot');
+  msg.querySelector('.bubble').innerHTML = renderMarkdown(GREETING);
+}
 
 newchat.addEventListener('click', async () => {
   try { await fetch('/reset', { method:'POST', headers:{'content-type':'application/json'},
         body: JSON.stringify({ session_id: sessionId }) }); } catch (e) {}
   sessionId = newId();
   chat.innerHTML = '';
-  const e = document.createElement('div');
-  e.className = 'empty'; e.id = 'empty'; e.innerHTML = EMPTY_HTML;
-  chat.appendChild(e); empty = e;
+  showGreeting();
   q.focus();
 });
 
@@ -298,7 +293,6 @@ function renderMeta(botMsg, bubble, data, question) {
 async function ask() {
   const text = q.value.trim();
   if (!text) return;
-  if (empty) { empty.remove(); empty = null; }
 
   addMsg('user').querySelector('.bubble').textContent = text;
   q.value = ''; q.style.height = 'auto';
@@ -356,6 +350,10 @@ async function ask() {
     send.disabled = false; q.focus(); chat.scrollTop = chat.scrollHeight;
   }
 }
+
+// greet on first load
+showGreeting();
+q.focus();
 </script>
 </body>
 </html>
