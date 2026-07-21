@@ -33,6 +33,26 @@ class Settings(BaseSettings):
     # Conversation memory — how many prior turns to remember per session
     history_turns: int = 6
 
+    # ── Ticket connectors (put SECRETS in .env; these are non-secret defaults) ──
+    # Jira Cloud
+    jira_base_url: str = ""          # e.g. https://yourorg.atlassian.net
+    jira_email: str = ""
+    jira_api_token: str = ""         # set in .env
+    jira_jql: str = "statusCategory = Done ORDER BY updated DESC"
+    # Zendesk
+    zendesk_subdomain: str = ""      # e.g. yourorg (from yourorg.zendesk.com)
+    zendesk_email: str = ""
+    zendesk_api_token: str = ""      # set in .env
+    zendesk_query: str = "type:ticket status:solved"
+    # Freshservice
+    freshservice_domain: str = ""    # e.g. yourorg.freshservice.com
+    freshservice_api_key: str = ""   # set in .env
+    # Generic REST source
+    generic_url: str = ""            # full URL returning JSON
+    generic_auth_header: str = ""    # e.g. "Bearer xyz" (set in .env)
+    generic_results_path: str = ""   # dot-path to the array, e.g. "data.tickets"
+    generic_field_map: str = ""      # JSON mapping our fields -> source fields
+
     # Generation
     llm_model: str = "qwen2.5:7b"
     lb_url: str = "http://127.0.0.1:8080"

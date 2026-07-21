@@ -2,6 +2,26 @@
 
 All notable changes to cbx-rag are recorded here. Newest first.
 
+## [0.12.0] — 2026-07-21 — Live ticket connectors
+
+### Added
+- **Pluggable connector layer** (`app/connectors/`) to pull resolved tickets
+  directly from external systems and ingest them:
+  - **Jira** (REST search + ADF description flattening), **Zendesk** (Search API),
+    **Freshservice** (tickets API, resolved/closed filter), and a **Generic REST**
+    adapter (map any JSON source's fields via `GENERIC_FIELD_MAP`).
+  - Each splits HTTP `fetch()` from a pure `normalize()` (unit-tested with sample
+    payloads — no live creds needed) and reports missing config clearly.
+- `scripts/sync_tickets.py <source> [--limit N] [--dry-run]` — fetch + ingest.
+- Connector config in `.env` (`.env.example` updated); secrets stay local, never
+  in code.
+- 6 connector tests (suite now 75, all green). `docs/07-tickets.md` updated.
+
+### Note
+- Jira `resolution` is the resolution name; Zendesk/Freshservice keep the fix in
+  comments — summary+description still give strong retrieval. Extend a connector
+  to pull comments if you need the verbatim fix text.
+
 ## [0.11.0] — 2026-07-21 — Phase 2: ticket integration + agent-assist
 
 ### Added
