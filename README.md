@@ -101,4 +101,5 @@ python scripts/ingest_docs.py ../cbx-playwright/CBX_API_HANDOUT.md
 - [`docs/04-load-balancer.md`](docs/04-load-balancer.md) — how the LB works & how to scale
 - [`docs/05-cbx-data.md`](docs/05-cbx-data.md) — moving from sample docs to CBX data
 - [`docs/06-conversation-memory.md`](docs/06-conversation-memory.md) — multi-turn memory + strict grounding
+- [`docs/07-tickets.md`](docs/07-tickets.md) — support tickets + agent-assist
 - [`docs/CHANGELOG.md`](docs/CHANGELOG.md) — what changed, when

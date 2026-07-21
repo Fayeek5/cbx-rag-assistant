@@ -227,6 +227,33 @@ def answer(question: str, session_id: str = "", top_k: int | None = None) -> dic
             "search_query": search_query, "intent": "doc"}
 
 
+ASSIST_SYSTEM = (
+    "You are assisting a CBX / TradeBeyond SUPPORT ENGINEER (internal, not the "
+    "customer) triage a new ticket. Use ONLY the CONTEXT — past resolved tickets "
+    "and product documentation. Produce:\n"
+    "1. Probable cause — grounded in the context, cite [n].\n"
+    "2. Suggested next step / reply to send.\n"
+    "3. Confidence: High / Medium / Low, and if Low, recommend escalation.\n"
+    "Do not invent facts beyond the context. Prefer resolutions from similar past "
+    "tickets when present."
+)
+
+
+def assist(ticket_text: str, top_k: int | None = None) -> dict:
+    """Agent-assist for support: draft a grounded triage from similar resolved
+    tickets + docs. Unlike answer(), it does not hard-refuse — it always drafts,
+    but flags Low confidence when the context is weak (engineer reviews it)."""
+    passages = retriever.retrieve(ticket_text, top_k=top_k)
+    if not passages:
+        return {"draft": "No similar tickets or documentation found — escalate to a specialist.",
+                "sources": [], "passages": [], "confident": False}
+    context = _format_context(passages)
+    draft = chat(ASSIST_SYSTEM, f"CONTEXT:\n\n{context}\n\n---\nNEW TICKET:\n{ticket_text}\n\nDraft:")
+    sources = sorted({p["source"] for p in passages})
+    return {"draft": _clean_answer(draft), "sources": sources, "passages": passages,
+            "confident": retriever.passes_threshold(passages)}
+
+
 def answer_stream(question: str, session_id: str = "", top_k: int | None = None):
     """Generator variant for SSE: yields {'type':'token','text':...} deltas, then a
     final {'type':'meta', ...} with sources/passages/intent/followups. Same intent

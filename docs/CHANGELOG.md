@@ -2,6 +2,30 @@
 
 All notable changes to cbx-rag are recorded here. Newest first.
 
+## [0.11.0] — 2026-07-21 — Phase 2: ticket integration + agent-assist
+
+### Added
+- **Support-ticket ingestion** — `app/tickets.py` turns resolved tickets (JSONL /
+  JSON / CSV) into chunks tagged `ticket:<id>`, ingested into the same store as
+  the docs so retrieval draws on tickets + documentation together.
+  `scripts/ingest_tickets.py` loads them; `samples/sample_tickets.jsonl` provided.
+- **Agent-assist** — `POST /assist {ticket}` drafts a grounded triage for a
+  support engineer: probable cause → suggested reply → confidence (Low → escalate),
+  citing similar past tickets and docs. Always drafts (human-in-the-loop), stays
+  grounded in retrieved context.
+- `docs/07-tickets.md` — format, ingestion, and how to export real Jira tickets.
+- 4 ticket tests (suite now 69, all green).
+
+### Verified
+- Ingested 5 sample tickets; `/assist` on a "No records found" ticket correctly
+  surfaced the matching resolved ticket (OpenSearch index) with a drafted reply,
+  High confidence, and citations to both tickets and docs.
+
+---
+
+Phase 2 complete: evaluation harness · logging/monitoring · PII/security ·
+ticket integration + agent-assist.
+
 ## [0.10.0] — 2026-07-21 — Phase 2: logging/monitoring + PII/security
 
 ### Added — logging & monitoring

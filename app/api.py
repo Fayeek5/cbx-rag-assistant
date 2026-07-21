@@ -22,7 +22,7 @@ from pydantic import BaseModel
 
 from config import settings
 from app import vectorstore, memory, telemetry
-from app.rag import answer, answer_stream, REFUSAL
+from app.rag import answer, answer_stream, assist, REFUSAL
 
 app = FastAPI(title="CBX RAG API", version="0.1.0")
 
@@ -147,6 +147,20 @@ def ask_stream(req: AskRequest):
 def get_metrics():
     """Usage + health aggregates from the request log."""
     return telemetry.metrics()
+
+
+class AssistRequest(BaseModel):
+    ticket: str
+    top_k: Optional[int] = None
+
+
+@app.post("/assist")
+def assist_endpoint(req: AssistRequest):
+    """Agent-assist: draft a grounded triage for a support engineer from similar
+    resolved tickets + docs."""
+    if _too_long(req.ticket):
+        return JSONResponse({"detail": f"Ticket too long (max {MAX_QUESTION_CHARS} chars)."}, status_code=400)
+    return assist(req.ticket, top_k=req.top_k)
 
 
 @app.post("/reset")
