@@ -2,6 +2,21 @@
 
 All notable changes to cbx-rag are recorded here. Newest first.
 
+## [0.13.0] — 2026-07-21 — Phase 2 UI (Agent Assist + Metrics) + markdown fix
+
+### Added
+- **Top navigation** in the UI to switch between three views:
+  - **Chat** — the existing grounded assistant.
+  - **Agent Assist** — paste an incoming ticket, get a drafted triage from
+    `/assist` (cause → reply → confidence + sources) rendered in-page.
+  - **Metrics** — dashboard over `/metrics`: total/doc requests, refusal rate,
+    avg/p95 latency, intent-breakdown bars, top cited sources, recent questions.
+
+### Fixed
+- **Markdown renderer bug**: the code-fence placeholder used a ` <n> ` pattern
+  that collided with standalone numbers in text (e.g. "a 500 error" rendered as
+  "aundefinederror"). Switched to a collision-proof `@@FENCE<n>@@` sentinel.
+
 ## [0.12.0] — 2026-07-21 — Live ticket connectors
 
 ### Added

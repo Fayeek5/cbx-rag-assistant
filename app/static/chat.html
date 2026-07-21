@@ -45,6 +45,41 @@
   #newchat { font-size: 12px; color: #17293b; background: rgba(255,255,255,.75);
     border: 1px solid var(--line); border-radius: 8px; padding: 6px 12px; cursor: pointer; }
   #newchat:hover { background: #fff; }
+  .nav { display: flex; gap: 4px; }
+  .navbtn { font-size: 13px; color: #35506b; background: rgba(255,255,255,.55);
+    border: 1px solid rgba(255,255,255,.7); border-radius: 8px; padding: 6px 12px; cursor: pointer; }
+  .navbtn:hover { background: #fff; }
+  .navbtn.active { background: #fff; color: var(--accent-dk); font-weight: 700; border-color: #bcd9f6; }
+  .card-head .mini { margin-left: auto; font-size: 12px; background: var(--accent-soft);
+    border: 1px solid #bcd9f6; color: var(--accent-dk); border-radius: 8px; padding: 4px 12px; cursor: pointer; }
+
+  /* assist view */
+  .assist-body { padding: 20px 22px; overflow-y: auto; }
+  .lbl { display: block; font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+  #ticket { width: 100%; background: #fff; border: 1px solid var(--line); border-radius: 12px;
+    padding: 12px 14px; color: var(--ink); font-size: 14px; resize: vertical; font-family: inherit; }
+  #ticket:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(43,125,233,.15); }
+  #assist-btn { margin-top: 10px; background: var(--accent); color: #fff; border: none; border-radius: 12px;
+    padding: 10px 20px; font-size: 14px; font-weight: 600; cursor: pointer; }
+  #assist-btn:hover { background: #1a75d1; } #assist-btn:disabled { opacity: .5; cursor: not-allowed; }
+  #assist-out { margin-top: 18px; }
+  .conf { display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 10px; border-radius: 20px; margin-bottom: 10px; }
+  .conf.hi { background: #e3f6ea; color: #1f7a44; } .conf.lo { background: #fdecea; color: #b23b3b; }
+  .draft { background: var(--bot); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; font-size: 14px; line-height: 1.55; }
+
+  /* metrics view */
+  .metrics-body { padding: 20px 22px; overflow-y: auto; }
+  .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px,1fr)); gap: 12px; margin-bottom: 18px; }
+  .stat { background: var(--bot); border: 1px solid var(--line); border-radius: 12px; padding: 14px; }
+  .stat .n { font-size: 24px; font-weight: 700; color: var(--accent-dk); }
+  .stat .l { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .mrow { margin-bottom: 16px; }
+  .mrow h3 { font-size: 13px; color: var(--ink); margin-bottom: 8px; }
+  .bar { display: flex; align-items: center; gap: 8px; font-size: 12px; margin: 3px 0; }
+  .bar .k { width: 120px; color: var(--muted); } .bar .v { height: 10px; background: var(--accent); border-radius: 5px; }
+  .mtable { width: 100%; font-size: 12px; border-collapse: collapse; }
+  .mtable td { padding: 4px 8px; border-bottom: 1px solid var(--line); }
+  .mtable .muted { color: var(--muted); }
 
   /* white card that holds the whole conversation */
   .card {
@@ -139,11 +174,17 @@
       </span>
       <span class="wordmark">trade<b>beyond</b></span>
     </div>
+    <nav class="nav">
+      <button class="navbtn active" data-view="chat">💬 Chat</button>
+      <button class="navbtn" data-view="assist">🛠️ Agent Assist</button>
+      <button class="navbtn" data-view="metrics">📊 Metrics</button>
+    </nav>
     <span class="status" id="status">connecting…</span>
     <button id="newchat" title="Start a fresh conversation">New chat</button>
   </div>
 
-  <div class="card">
+  <!-- CHAT VIEW -->
+  <div class="card view" id="view-chat">
     <div class="card-head">
       <h1>CBX Documentation Assistant</h1>
       <span>grounded in the indexed documentation</span>
@@ -156,6 +197,30 @@
       </div>
       <div class="hint">Grounded in indexed docs only · answers cite their source files · says "I don't have that" when unknown.</div>
     </div>
+  </div>
+
+  <!-- AGENT ASSIST VIEW -->
+  <div class="card view" id="view-assist" style="display:none">
+    <div class="card-head">
+      <h1>Agent Assist</h1>
+      <span>draft a grounded triage from similar resolved tickets + docs</span>
+    </div>
+    <div class="assist-body">
+      <label class="lbl">Paste the incoming ticket / customer problem</label>
+      <textarea id="ticket" rows="5" placeholder="e.g. Customer says the colors list shows 'No records found' even though the import succeeded…"></textarea>
+      <button id="assist-btn">Draft triage</button>
+      <div id="assist-out"></div>
+    </div>
+  </div>
+
+  <!-- METRICS VIEW -->
+  <div class="card view" id="view-metrics" style="display:none">
+    <div class="card-head">
+      <h1>Usage Metrics</h1>
+      <span>from the request log</span>
+      <button id="metrics-refresh" class="mini">Refresh</button>
+    </div>
+    <div id="metrics-out" class="metrics-body"></div>
   </div>
 </div>
 
@@ -203,7 +268,7 @@ function renderMarkdown(md) {
   const fences = [];
   md = md.replace(/```(\w*)\n?([\s\S]*?)```/g, (m, lang, code) => {
     fences.push(`<pre><code>${escapeHtml(code.replace(/\n$/, ''))}</code></pre>`);
-    return ` ${fences.length - 1} `;
+    return `@@FENCE${fences.length - 1}@@`;  // sentinel, cannot collide with text
   });
   md = escapeHtml(md);
   md = md.replace(/`([^`]+)`/g, (m, c) => `<code>${c}</code>`);
@@ -216,7 +281,7 @@ function renderMarkdown(md) {
   const flushP = () => { if (para.length) { html += '<p>' + para.join('<br>') + '</p>'; para = []; } };
   const closeLists = () => { if (inUl) { html += '</ul>'; inUl = false; } if (inOl) { html += '</ol>'; inOl = false; } };
   for (let ln of lines) {
-    if (/^ \d+ $/.test(ln.trim())) { flushP(); closeLists(); html += ln.trim(); continue; }
+    if (/^@@FENCE\d+@@$/.test(ln.trim())) { flushP(); closeLists(); html += ln.trim(); continue; }
     let m;
     if ((m = ln.match(/^\s*[-*]\s+(.*)/))) { flushP(); if (!inUl) { closeLists(); html += '<ul>'; inUl = true; } html += `<li>${m[1]}</li>`; }
     else if ((m = ln.match(/^\s*\d+\.\s+(.*)/))) { flushP(); if (!inOl) { closeLists(); html += '<ol>'; inOl = true; } html += `<li>${m[1]}</li>`; }
@@ -225,7 +290,7 @@ function renderMarkdown(md) {
     else { para.push(ln); }
   }
   flushP(); closeLists();
-  html = html.replace(/ (\d+) /g, (m, i) => fences[+i]);
+  html = html.replace(/@@FENCE(\d+)@@/g, (m, i) => fences[+i]);
   return html;
 }
 
@@ -349,6 +414,73 @@ async function ask() {
   } finally {
     send.disabled = false; q.focus(); chat.scrollTop = chat.scrollHeight;
   }
+}
+
+// ── view switching (Chat / Agent Assist / Metrics) ──
+document.querySelectorAll('.navbtn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.navbtn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const view = btn.dataset.view;
+    document.querySelectorAll('.view').forEach(v => v.style.display = 'none');
+    document.getElementById('view-' + view).style.display = 'flex';
+    if (view === 'metrics') loadMetrics();
+    if (view === 'assist') document.getElementById('ticket').focus();
+  });
+});
+
+// ── Agent Assist ──
+const ticket = document.getElementById('ticket');
+const assistBtn = document.getElementById('assist-btn');
+const assistOut = document.getElementById('assist-out');
+assistBtn.addEventListener('click', async () => {
+  const text = ticket.value.trim();
+  if (!text) return;
+  assistBtn.disabled = true;
+  assistOut.innerHTML = `<span class="typing">Drafting from similar tickets & docs <span class="dots"><span></span><span></span><span></span></span></span>`;
+  try {
+    const res = await fetch('/assist', { method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ ticket: text }) });
+    const d = await res.json();
+    const conf = d.confident ? '<span class="conf hi">Confidence: sufficient context</span>'
+                             : '<span class="conf lo">Low context — verify / escalate</span>';
+    const src = (d.sources || []).map(s => `<span class="src-chip">${escapeHtml(s.split('/').pop())}</span>`).join(' ');
+    assistOut.innerHTML = `${conf}<div class="draft">${renderMarkdown(d.draft || '')}</div>
+      <div class="sources" style="margin-top:10px"><span>Based on:</span> ${src}</div>`;
+  } catch (e) {
+    assistOut.innerHTML = `<div class="draft">⚠️ Error: ${escapeHtml(e.message)}</div>`;
+  } finally { assistBtn.disabled = false; }
+});
+
+// ── Metrics ──
+document.getElementById('metrics-refresh').addEventListener('click', loadMetrics);
+async function loadMetrics() {
+  const out = document.getElementById('metrics-out');
+  out.innerHTML = `<span class="typing">Loading metrics…</span>`;
+  try {
+    const m = await (await fetch('/metrics')).json();
+    if (!m.total_requests) { out.innerHTML = '<p class="lbl">No requests logged yet. Ask something in Chat first.</p>'; return; }
+    const lat = m.latency_ms || {};
+    const stat = (n, l) => `<div class="stat"><div class="n">${n}</div><div class="l">${l}</div></div>`;
+    const maxIntent = Math.max(...Object.values(m.intents || {1:1}));
+    const intentBars = Object.entries(m.intents || {}).map(([k, v]) =>
+      `<div class="bar"><span class="k">${k}</span><span class="v" style="width:${Math.round(v/maxIntent*180)}px"></span><span>${v}</span></div>`).join('');
+    const srcRows = (m.top_sources || []).map(s =>
+      `<tr><td>${escapeHtml(s.source)}</td><td class="muted">${s.count}</td></tr>`).join('');
+    const recentRows = (m.recent || []).map(r =>
+      `<tr><td>${escapeHtml((r.q||'').slice(0,60))}</td><td class="muted">${r.intent}${r.refused?' · refused':''}</td><td class="muted">${r.ms||''}ms</td></tr>`).join('');
+    out.innerHTML = `
+      <div class="stat-grid">
+        ${stat(m.total_requests, 'total requests')}
+        ${stat(m.doc_questions, 'doc questions')}
+        ${stat((m.refusal_rate!=null?Math.round(m.refusal_rate*100):0)+'%', 'refusal rate')}
+        ${stat((lat.avg||0)+'ms', 'avg latency')}
+        ${stat((lat.p95||0)+'ms', 'p95 latency')}
+      </div>
+      <div class="mrow"><h3>Intent breakdown</h3>${intentBars}</div>
+      <div class="mrow"><h3>Top cited sources</h3><table class="mtable">${srcRows||'<tr><td class="muted">none</td></tr>'}</table></div>
+      <div class="mrow"><h3>Recent questions</h3><table class="mtable">${recentRows||'<tr><td class="muted">none</td></tr>'}</table></div>`;
+  } catch (e) { out.innerHTML = `<p class="lbl">⚠️ ${escapeHtml(e.message)}</p>`; }
 }
 
 // greet on first load
