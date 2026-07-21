@@ -11,20 +11,58 @@ from __future__ import annotations
 
 import json
 import os
+import time
+from collections import defaultdict, deque
 from datetime import datetime, timezone
 from typing import Optional
 
-from fastapi import FastAPI
-from fastapi.responses import FileResponse, StreamingResponse
+from fastapi import FastAPI, Request
+from fastapi.responses import FileResponse, StreamingResponse, JSONResponse
 from pydantic import BaseModel
 
 from config import settings
-from app import vectorstore, memory
-from app.rag import answer, answer_stream
+from app import vectorstore, memory, telemetry
+from app.rag import answer, answer_stream, REFUSAL
 
 app = FastAPI(title="CBX RAG API", version="0.1.0")
 
 _CHAT_HTML = os.path.join(os.path.dirname(__file__), "static", "chat.html")
+
+MAX_QUESTION_CHARS = 2000
+_RATE_MAX = 30          # max requests
+_RATE_WINDOW = 60.0     # per this many seconds, per client IP
+_hits: dict[str, deque] = defaultdict(deque)
+
+
+@app.middleware("http")
+async def rate_limit(request: Request, call_next):
+    """Simple in-memory sliding-window rate limit on the answer endpoints."""
+    if request.url.path in ("/ask", "/ask/stream"):
+        ip = request.client.host if request.client else "unknown"
+        now = time.monotonic()
+        dq = _hits[ip]
+        while dq and now - dq[0] > _RATE_WINDOW:
+            dq.popleft()
+        if len(dq) >= _RATE_MAX:
+            return JSONResponse({"detail": "Rate limit exceeded. Try again shortly."}, status_code=429)
+        dq.append(now)
+    return await call_next(request)
+
+
+def _too_long(question: str) -> bool:
+    return len(question or "") > MAX_QUESTION_CHARS
+
+
+def _log(session_id, question, result, latency_ms):
+    passages = result.get("passages") or []
+    telemetry.log_turn(
+        session_id=session_id or "", question=question,
+        intent=result.get("intent", "doc"), answer=result.get("answer", ""),
+        sources=result.get("sources", []),
+        top_score=(passages[0].get("score") if passages else None),
+        latency_ms=latency_ms,
+        refused=result.get("answer", "").strip().startswith(REFUSAL.rstrip(".")),
+    )
 
 
 @app.get("/")
@@ -68,7 +106,11 @@ def health():
 
 @app.post("/ask")
 def ask(req: AskRequest):
+    if _too_long(req.question):
+        return JSONResponse({"detail": f"Question too long (max {MAX_QUESTION_CHARS} chars)."}, status_code=400)
+    t0 = time.monotonic()
     result = answer(req.question, session_id=req.session_id or "", top_k=req.top_k)
+    _log(req.session_id, req.question, result, int((time.monotonic() - t0) * 1000))
     result["session_id"] = req.session_id
     return result
 
@@ -77,15 +119,34 @@ def ask(req: AskRequest):
 def ask_stream(req: AskRequest):
     """Streaming variant: Server-Sent Events. Emits token deltas, then a final
     'meta' event with sources/passages/intent/followups."""
+    if _too_long(req.question):
+        return JSONResponse({"detail": f"Question too long (max {MAX_QUESTION_CHARS} chars)."}, status_code=400)
+
     def gen():
+        t0 = time.monotonic()
+        acc, meta = "", None
         try:
             for ev in answer_stream(req.question, session_id=req.session_id or "", top_k=req.top_k):
+                if ev.get("type") == "token":
+                    acc += ev.get("text", "")
+                elif ev.get("type") == "meta":
+                    meta = ev
                 yield f"data: {json.dumps(ev)}\n\n"
         except Exception as e:  # noqa: BLE001
             yield f"data: {json.dumps({'type': 'error', 'text': str(e)})}\n\n"
+        if meta is not None:
+            result = {"answer": acc, "sources": meta.get("sources", []),
+                      "passages": meta.get("passages", []), "intent": meta.get("intent", "doc")}
+            _log(req.session_id, req.question, result, int((time.monotonic() - t0) * 1000))
         yield "data: {\"type\": \"done\"}\n\n"
     return StreamingResponse(gen(), media_type="text/event-stream",
                              headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
+
+
+@app.get("/metrics")
+def get_metrics():
+    """Usage + health aggregates from the request log."""
+    return telemetry.metrics()
 
 
 @app.post("/reset")

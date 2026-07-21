@@ -2,6 +2,25 @@
 
 All notable changes to cbx-rag are recorded here. Newest first.
 
+## [0.10.0] — 2026-07-21 — Phase 2: logging/monitoring + PII/security
+
+### Added — logging & monitoring
+- `app/telemetry.py` — every answered turn appended to `data/requests.jsonl`
+  (ts, session, question, intent, sources, top score, latency, refused).
+- `GET /metrics` — aggregates: total/doc requests, refusal rate, latency
+  avg/p50/p95, intent breakdown, top-cited sources, recent questions.
+
+### Added — PII / security
+- `app/security.py` — regex PII detection + redaction (email, phone, card, SSN,
+  AWS keys, API tokens, Bearer). Logged questions/answers are redacted before write.
+- `scripts/scan_pii.py` — scan the corpus (or a path) for PII before indexing.
+  (Current corpus: clean.)
+- API guards: **rate limiting** (30 req/60s per IP on answer endpoints → 429) and
+  an **input cap** (2000 chars → 400).
+
+### Tests
+- +14 tests (security, telemetry). Suite now 65, all green.
+
 ## [0.9.0] — 2026-07-21 — Phase 2: evaluation harness
 
 ### Added
