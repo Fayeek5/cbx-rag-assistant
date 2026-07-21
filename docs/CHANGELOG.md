@@ -2,6 +2,24 @@
 
 All notable changes to cbx-rag are recorded here. Newest first.
 
+## [0.9.0] — 2026-07-21 — Phase 2: evaluation harness
+
+### Added
+- **Evaluation harness** to catch retrieval/grounding/answer regressions:
+  - `eval/cases.json` — scored Q&A set (expected keywords, expected source,
+    should-refuse flag) covering real CBX topics + off-topic refusals.
+  - `app/evaluate.py` — pure scoring logic (retrieval recall, refusal accuracy,
+    answer-keyword rate) — unit tested.
+  - `scripts/evaluate.py` — runs the set through the live pipeline, prints a
+    pass/fail table + summary, writes `data/eval_results.json`, exits non-zero on
+    any failure (CI-friendly).
+- 6 scoring unit tests (suite now 57).
+
+### Baseline
+- 10/11 cases pass · retrieval recall 1.0 · refusal accuracy 0.91 · keyword rate
+  0.875. The one failure ("No records found") is generation flakiness (retrieval
+  is correct at 0.69) — tracked by the harness for future tuning.
+
 ## [0.8.1] — 2026-07-21 — Fix false refusals (retrieval threshold calibration)
 
 ### Fixed

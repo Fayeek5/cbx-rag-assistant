@@ -1,0 +1,68 @@
+[
+  {
+    "question": "What is the correct shape for a codelist field in the API?",
+    "expect_contains": ["code", "name", "version"],
+    "expect_source": "CBX_API_HANDOUT.md",
+    "expect_refuse": false
+  },
+  {
+    "question": "What causes a 500 error when importing colors?",
+    "expect_contains": ["string", "codelist"],
+    "expect_source": null,
+    "expect_refuse": false
+  },
+  {
+    "question": "What must be configured before creating an item?",
+    "expect_contains": ["Code Lists"],
+    "expect_source": null,
+    "expect_refuse": false
+  },
+  {
+    "question": "What is ELC?",
+    "expect_contains": ["landed", "freight"],
+    "expect_source": "TRADEBEYOND_KNOWLEDGE_BASE.md",
+    "expect_refuse": false
+  },
+  {
+    "question": "Why does a list show No records found even though data was imported?",
+    "expect_contains": ["index"],
+    "expect_source": null,
+    "expect_refuse": false
+  },
+  {
+    "question": "What is a critical path template?",
+    "expect_contains": ["milestone"],
+    "expect_source": null,
+    "expect_refuse": false
+  },
+  {
+    "question": "How do sample requests work?",
+    "expect_contains": ["sample"],
+    "expect_source": null,
+    "expect_refuse": false
+  },
+  {
+    "question": "What are shared files used for?",
+    "expect_contains": ["file"],
+    "expect_source": "TRADEBEYOND_KNOWLEDGE_BASE.md",
+    "expect_refuse": false
+  },
+  {
+    "question": "What is the capital of France?",
+    "expect_contains": [],
+    "expect_source": null,
+    "expect_refuse": true
+  },
+  {
+    "question": "What is the employee vacation policy?",
+    "expect_contains": [],
+    "expect_source": null,
+    "expect_refuse": true
+  },
+  {
+    "question": "How do I bake sourdough bread?",
+    "expect_contains": [],
+    "expect_source": null,
+    "expect_refuse": true
+  }
+]
