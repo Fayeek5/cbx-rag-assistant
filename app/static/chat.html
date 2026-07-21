@@ -529,10 +529,8 @@ async function loadConnectors() {
         const pill = c.configured ? '<span class="pill ok">configured</span>'
                                   : '<span class="pill no">not configured</span>';
         const msg = c.message ? `<div class="conn-msg">${escapeHtml(c.message)}</div>` : '';
-        const btns = c.configured
-          ? `<button class="dry" data-c="${c.name}">Dry-run</button>
-             <button class="sync" data-c="${c.name}">Sync now</button>`
-          : `<button class="sync" disabled>Sync now</button>`;
+        const btns = `<button class="dry" data-c="${c.name}">Dry-run</button>
+             <button class="sync" data-c="${c.name}">Sync now</button>`;
         return `<div class="conn-card">
           <div class="conn-head"><span class="conn-name">${c.name}</span>${pill}</div>
           ${msg}
