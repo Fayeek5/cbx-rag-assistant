@@ -2,6 +2,14 @@
 
 All notable changes to cbx-rag are recorded here. Newest first.
 
+## [0.15.0] — 2026-07-21 — CI
+
+### Added
+- **GitHub Actions CI** (`.github/workflows/ci.yml`): runs the full pytest suite
+  on every push to main and every PR. Installs CPU-only torch, caches Hugging Face
+  model downloads (bge-small + cross-encoder), runs 78 tests. No Ollama needed
+  (LLM is mocked in tests). Status badge added to the README.
+
 ## [0.14.0] — 2026-07-21 — Sources (connectors) UI + Agent Assist clear
 
 ### Added
