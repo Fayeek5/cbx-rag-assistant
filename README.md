@@ -1,6 +1,6 @@
 # cbx-rag
 
-![CI](https://github.com/Fayeek5/cbx-rag/actions/workflows/ci.yml/badge.svg)
+![CI](https://github.com/Fayeek5/cbx-rag-assistant/actions/workflows/ci.yml/badge.svg)
 
 A local, fully-free Retrieval-Augmented Generation (RAG) system for CBX /
 TradeBeyond documentation and support. Built in Python, runs on a single machine,
