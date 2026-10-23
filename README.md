@@ -164,6 +164,19 @@ Full methodology, current results, and honest limitations are in
 
 ---
 
+## Deploy
+
+The local setup uses Ollama; for a hosted demo, generation switches to any
+OpenAI-compatible endpoint via `LLM_PROVIDER=openai` (retrieval is unchanged).
+
+- **Free (recommended):** Hugging Face Spaces (Docker, free CPU ~16 GB) + Groq's
+  free API. A `Dockerfile` is included — see
+  [`docs/10-deploy-huggingface.md`](docs/10-deploy-huggingface.md).
+- **Paid / persistent:** Render via the included `render.yaml` (standard plan) —
+  see [`docs/09-deploy-render.md`](docs/09-deploy-render.md).
+
+---
+
 ## Documentation
 
 - [`docs/01-architecture.md`](docs/01-architecture.md) — components and data flow
@@ -174,7 +187,8 @@ Full methodology, current results, and honest limitations are in
 - [`docs/06-conversation-memory.md`](docs/06-conversation-memory.md) — multi-turn memory + strict grounding
 - [`docs/07-tickets.md`](docs/07-tickets.md) — support tickets + agent-assist
 - [`docs/08-evaluation.md`](docs/08-evaluation.md) — evaluation, monitoring & limitations
-- [`docs/09-deploy-render.md`](docs/09-deploy-render.md) — host it on Render (hosted LLM)
+- [`docs/09-deploy-render.md`](docs/09-deploy-render.md) — host it on Render (paid, persistent)
+- [`docs/10-deploy-huggingface.md`](docs/10-deploy-huggingface.md) — host it free on Hugging Face Spaces
 - [`docs/CHANGELOG.md`](docs/CHANGELOG.md) — what changed, when
 
 ---

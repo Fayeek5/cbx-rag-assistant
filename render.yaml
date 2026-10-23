@@ -16,7 +16,7 @@ services:
     runtime: python
     plan: standard                 # 2 GB RAM; free/starter (512 MB) may OOM
     buildCommand: pip install -r requirements.txt
-    startCommand: bash scripts/render_start.sh
+    startCommand: bash scripts/serve.sh
     healthCheckPath: /health
     autoDeploy: true
     disk:

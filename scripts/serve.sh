@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Render start command: seed the vector store once, then run the API.
+# Start command for any host (Render, Hugging Face Spaces, Docker):
+# seed the vector store once, then run the API on $PORT.
 set -euo pipefail
 
 CHROMA_DIR="${CHROMA_DIR:-./data/chroma_db}"
