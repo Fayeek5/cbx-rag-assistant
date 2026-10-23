@@ -54,8 +54,14 @@ class Settings(BaseSettings):
     generic_field_map: str = ""      # JSON mapping our fields -> source fields
 
     # Generation
+    # llm_provider: "ollama" (local, default) or "openai" (any OpenAI-compatible
+    # hosted endpoint — Groq, OpenRouter, Together, OpenAI, etc. — for cloud deploys)
+    llm_provider: str = "ollama"
     llm_model: str = "qwen2.5:7b"
     lb_url: str = "http://127.0.0.1:8080"
+    # Used only when llm_provider == "openai"
+    openai_base_url: str = "https://api.openai.com/v1"
+    openai_api_key: str = ""
 
     # Load balancer backends (comma-separated env -> list)
     ollama_backends: str = "http://127.0.0.1:11434"

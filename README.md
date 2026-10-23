@@ -174,4 +174,11 @@ Full methodology, current results, and honest limitations are in
 - [`docs/06-conversation-memory.md`](docs/06-conversation-memory.md) — multi-turn memory + strict grounding
 - [`docs/07-tickets.md`](docs/07-tickets.md) — support tickets + agent-assist
 - [`docs/08-evaluation.md`](docs/08-evaluation.md) — evaluation, monitoring & limitations
+- [`docs/09-deploy-render.md`](docs/09-deploy-render.md) — host it on Render (hosted LLM)
 - [`docs/CHANGELOG.md`](docs/CHANGELOG.md) — what changed, when
+
+---
+
+## License
+
+Released under the [MIT License](LICENSE).

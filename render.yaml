@@ -1,0 +1,40 @@
+# Render Blueprint — deploy the RAG API as a web service.
+# Docs: https://render.com/docs/blueprint-spec
+#
+# The local Ollama model can't run on Render, so this uses the hosted
+# OpenAI-compatible provider (llm_provider = openai). Set OPENAI_API_KEY in the
+# Render dashboard (it is marked sync:false so it is never committed).
+#
+# Note on sizing: the embedding model (torch + sentence-transformers) needs
+# real RAM. The 512 MB free/starter tiers will likely OOM; the "standard" plan
+# (2 GB) is recommended. The reranker is disabled here to save memory — hybrid
+# retrieval still runs.
+
+services:
+  - type: web
+    name: cbx-rag-assistant
+    runtime: python
+    plan: standard                 # 2 GB RAM; free/starter (512 MB) may OOM
+    buildCommand: pip install -r requirements.txt
+    startCommand: bash scripts/render_start.sh
+    healthCheckPath: /health
+    autoDeploy: true
+    disk:
+      name: chroma-data            # persists the vector store across deploys
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.3"
+      - key: CHROMA_DIR
+        value: /var/data/chroma_db
+      - key: LLM_PROVIDER
+        value: openai
+      - key: OPENAI_BASE_URL       # any OpenAI-compatible endpoint (Groq shown)
+        value: https://api.groq.com/openai/v1
+      - key: LLM_MODEL             # a model the chosen provider serves
+        value: llama-3.1-8b-instant
+      - key: USE_RERANKER          # off to save memory on the hosted instance
+        value: "false"
+      - key: OPENAI_API_KEY        # set this in the Render dashboard (secret)
+        sync: false
